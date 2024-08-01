@@ -251,7 +251,7 @@ const ColumnHeader: React.FC = () => {
             )
           )}
         >
-          {allowEditRef.current && (
+          {/* {allowEditRef.current && (
             <span
               className="header-arrow"
               onClick={(e) => {
@@ -263,10 +263,11 @@ const ColumnHeader: React.FC = () => {
                   };
                 });
               }}
+              tabIndex={0}
             >
               <SVGIcon name="headDownArrow" width={12} />
             </span>
-          )}
+          )} */}
         </div>
       ) : null}
       {selectedLocation.map(({ col, col_pre, c1, c2 }, i) => (

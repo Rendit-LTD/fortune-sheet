@@ -35,6 +35,7 @@ export function getCellValue(
   let ret;
 
   if (cellData && _.isPlainObject(cellData)) {
+    console.log(row,column,cellData);
     ret = cellData[type];
 
     if (type === "f" && ret != null) {
@@ -44,7 +45,10 @@ export function getCellValue(
     } else if (cellData && cellData.ct && cellData.ct.fa === "yyyy-MM-dd") {
       ret = cellData.m;
     } else if (cellData.ct?.t === "inlineStr") {
-      ret = cellData.ct.s[0].v;
+      ret = cellData.ct.s.reduce(
+        (prev: string, cur: any) => prev + (cur.v ?? ""),
+        ""
+      );
     }
   }
 
