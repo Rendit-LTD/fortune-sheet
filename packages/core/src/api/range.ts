@@ -1,5 +1,5 @@
 import _ from "lodash";
-import { getdatabyselection, getFlowdata, getRangetxt, Selection } from "..";
+import { getdatabyselection, getFlowdata, getRangetxt, getSheetIndex, Selection } from "..";
 import { Context } from "../context";
 import { normalizeSelection, rangeValueToHtml } from "../modules";
 import { Cell, Range, SingleRange } from "../types";
@@ -66,7 +66,43 @@ export function getCellsByRange(
   const sheet = getSheet(ctx, options);
 
   if (!range || typeof range === "object") {
-    return getdatabyselection(ctx, range, sheet.id!);
+    const sheetId=sheet.id!
+    if (range == null && ctx.luckysheet_select_save) {
+      [range] = ctx.luckysheet_select_save;
+    }
+  
+    if (!range) return [];
+  
+    if (range.row == null || range.row.length === 0) {
+      return [];
+    }
+  
+    // 取数据
+    let d;
+    let cfg;
+    if (sheetId != null && sheetId !== ctx.currentSheetId) {
+      d = ctx.luckysheetfile[getSheetIndex(ctx, sheetId)!].data;
+      cfg = ctx.luckysheetfile[getSheetIndex(ctx, sheetId)!].config;
+    } else {
+      d = getFlowdata(ctx);
+      cfg = ctx.config;
+    }
+  
+    const data = [];
+    for (let r = range.row[0]; r <= range.row[1]; r += 1) {
+      if (d?.[r] == null) {
+        continue;
+      }
+  
+      const row = [];
+  
+      for (let c = range.column[0]; c <= range.column[1]; c += 1) {
+        row.push(d[r][c]);
+      }
+  
+      data.push(row);
+    }
+    return data;
   }
   throw INVALID_PARAMS;
 }
