@@ -749,7 +749,7 @@ const Workbook = React.forwardRef<WorkbookInstance, Settings & AdditionalProps>(
           <div
             className="fortune-container"
             ref={workbookContainer}
-            onKeyDown={onKeyDown}
+            //onKeyDown={onKeyDown}
           >
             <SVGDefines />
             <div className="fortune-workarea">

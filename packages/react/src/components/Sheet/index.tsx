@@ -27,6 +27,10 @@ const Sheet: React.FC<Props> = ({ sheet }) => {
    * Update data on window resize
    */
   useEffect(() => {
+    function fixResize(){
+      resize();
+      setTimeout(resize,100);
+    }
     function resize() {
       if (!data) return;
       setContext((draftCtx) => {
@@ -49,9 +53,9 @@ const Sheet: React.FC<Props> = ({ sheet }) => {
     // resizeObserver.observe(placeholderRef.current);
     // return () => resizeObserver.disconnect(); // clean up
 
-    window.addEventListener("resize", resize);
+    window.addEventListener("resize", fixResize);
     return () => {
-      window.removeEventListener("resize", resize);
+      window.removeEventListener("resize", fixResize);
     };
   }, [data, refs.canvas, setContext, settings.devicePixelRatio]);
 
