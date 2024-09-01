@@ -778,7 +778,7 @@ const SheetOverlay: React.FC = () => {
           )}
           {context.rangeDialog?.show && <RangeDialog />}
           <FilterOptions getContainer={() => containerRef.current!} />
-          <InputBox />
+          {/*<InputBox />*/}
           <NotationBoxes />
           <div id="luckysheet-multipleRange-show" />
           <div id="luckysheet-dynamicArray-hightShow" />
