@@ -121,19 +121,23 @@ export function setSelection(
   range: Range,
   options: CommonOptions
 ) {
-  const sheet = getSheet(ctx, options);
-  sheet.luckysheet_select_save = normalizeSelection(ctx, range);
-  if(sheet.luckysheet_select_save){
-    sheet.luckysheet_select_save[0].scrollTo=1;
-  }
-  if (ctx.currentSheetId === sheet.id) {
-    ctx.luckysheet_select_save = sheet.luckysheet_select_save;
-  }
-  else if(sheet.id){
-    ctx.sheetScrollRecord[sheet.id]={
-      ...ctx.sheetScrollRecord[sheet.id],
-      luckysheet_select_save:sheet.luckysheet_select_save,
+  try{
+    const sheet = getSheet(ctx, options);
+    sheet.luckysheet_select_save = normalizeSelection(ctx, range);
+    if(sheet.luckysheet_select_save){
+      sheet.luckysheet_select_save[0].scrollTo=1;
     }
+    if (ctx.currentSheetId === sheet.id) {
+      ctx.luckysheet_select_save = sheet.luckysheet_select_save;
+    }
+    else if(sheet.id){
+      ctx.sheetScrollRecord[sheet.id]={
+        ...ctx.sheetScrollRecord[sheet.id],
+        luckysheet_select_save:sheet.luckysheet_select_save,
+      }
+    }
+  }catch{
+    //ignore
   }
 }
 

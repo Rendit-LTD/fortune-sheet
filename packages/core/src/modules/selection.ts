@@ -1106,6 +1106,7 @@ export function moveHighlightRange(
   index: number,
   type: "rangeOfSelect" | "rangeOfFormula"
 ) {
+  try{
   let row;
   let row_pre;
   let col;
@@ -1481,6 +1482,10 @@ export function moveHighlightRange(
       row_focus: rf,
       column_focus: cf,
     };
+  }
+}
+  catch{
+    //ignore
   }
 }
 
@@ -2201,8 +2206,9 @@ export function selectAll(ctx: Context) {
       column_select: true,
     },
   ];
-
+  try{
   normalizeSelection(ctx, ctx.luckysheet_select_save);
+  }catch{}
 }
 
 export function fixRowStyleOverflowInFreeze(

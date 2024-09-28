@@ -641,7 +641,12 @@ export function updateContextWithSheetData(ctx: Context, data: any[][]) {
   const colCount = rowCount === 0 ? 0 : data[0].length;
 
   calcRowColSize(ctx, rowCount, colCount);
-  normalizeSelection(ctx, ctx.luckysheet_select_save);
+  try{
+    normalizeSelection(ctx, ctx.luckysheet_select_save);
+  }
+  catch{
+    //ignore
+  }
 }
 
 export function updateContextWithCanvas(

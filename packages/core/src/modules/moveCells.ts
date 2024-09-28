@@ -189,6 +189,7 @@ export function onCellsMoveEnd(
   scrollbarY: HTMLDivElement,
   container: HTMLDivElement
 ) {
+  try{
   // 改变选择框的位置并替换目标单元格
   if (!ctx.luckysheet_cell_selected_move) return;
   ctx.luckysheet_cell_selected_move = false;
@@ -565,4 +566,5 @@ export function onCellsMoveEnd(
   // ctx.countfuncTimeout = setTimeout(function () {
   //   countfunc();
   // }, 500);
+}catch{}
 }

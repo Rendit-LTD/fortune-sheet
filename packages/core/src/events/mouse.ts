@@ -224,6 +224,7 @@ export function handleCellAreaMouseDown(
   fxInput?: HTMLDivElement | null,
   canvas?: CanvasRenderingContext2D
 ) {
+  try{
   ctx.contextMenu = {};
   ctx.filterContextMenu = undefined;
   const flowdata = getFlowdata(ctx);
@@ -1214,6 +1215,10 @@ export function handleCellAreaMouseDown(
       });
     });
   }
+
+}catch{
+
+}
 }
 
 export function handleCellAreaDoubleClick(
