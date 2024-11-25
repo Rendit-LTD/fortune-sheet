@@ -1457,7 +1457,7 @@ export function handleContextMenu(
   // select current cell when clicking the right button
   e.preventDefault();
   if (area === "cell") {
-    _.set(ctx.contextMenu, "headerMenu", undefined);
+    _.set(ctx.contextMenu, "headerMenu", "cell");
     const rect = container.getBoundingClientRect();
     const mouseX = e.pageX - rect.left - window.scrollX;
     const mouseY = e.pageY - rect.top - window.scrollY;
@@ -1661,7 +1661,13 @@ export function handleContextMenu(
         row_index <= obj_s.row[1] &&
         !obj_s.column_select
     );
-
+    ctx.contextMenu = {
+      x,
+      y,
+      pageX: e.pageX,
+      pageY: e.pageY,
+      isTable:false,
+    };
     if (isInSelection) return;
     const col_index = ctx.visibledatacolumn.length - 1;
     const col = ctx.visibledatacolumn[col_index];
@@ -1716,7 +1722,13 @@ export function handleContextMenu(
         col_index <= obj_s.column[1] &&
         !obj_s.row_select
     );
-
+    ctx.contextMenu = {
+      x,
+      y,
+      pageX: e.pageX,
+      pageY: e.pageY,
+      isTable:false,
+    };
     if (isInSelection) return;
     const left = col_pre;
     const width = col - col_pre - 1;

@@ -39,6 +39,7 @@ const ContextMenu: React.FC = () => {
   const getMenuElement = useCallback(
     (name: string, i: number) => {
       const selection = context.luckysheet_select_save?.[0];
+      const cell_select = !selection?.column_select && !selection?.row_select;
       if (name === "|" && context.allowEdit) {
         return <Divider key={`divider-${i}`} />;
       }
@@ -82,148 +83,148 @@ const ContextMenu: React.FC = () => {
         return selection?.row_select
           ? null
           : ["left", "right"].map((dir) => (
-              <Menu
-                key={`add-col-${dir}`}
-                onClick={(e) => {
-                  const position =
-                    context.luckysheet_select_save?.[0]?.column?.[0];
-                  if (position == null) return;
-                  const countStr = (e.target as HTMLDivElement).querySelector(
-                    "input"
-                  )?.value;
-                  if (countStr == null) return;
-                  const count = parseInt(countStr, 10);
-                  if (count < 1) return;
-                  const direction = dir === "left" ? "lefttop" : "rightbottom";
-                  const insertRowColOp: SetContextOptions["insertRowColOp"] = {
-                    type: "column",
-                    index: position,
-                    count,
-                    direction,
-                    id: context.currentSheetId,
-                  };
-                  setContext(
-                    (draftCtx) => {
-                      try {
-                        insertRowCol(draftCtx, insertRowColOp);
-                        draftCtx.contextMenu = {};
-                      } catch (err: any) {
-                        if (err.message === "maxExceeded")
-                          showAlert(rightclick.columnOverLimit, "ok");
-                        else if (err.message === "readOnly")
-                          showAlert(
-                            rightclick.cannotInsertOnColumnReadOnly,
-                            "ok"
-                          );
-                        draftCtx.contextMenu = {};
-                      }
-                    },
-                    {
-                      insertRowColOp,
+            <Menu
+              key={`add-col-${dir}`}
+              onClick={(e) => {
+                const position =
+                  context.luckysheet_select_save?.[0]?.column?.[0];
+                if (position == null) return;
+                const countStr = (e.target as HTMLDivElement).querySelector(
+                  "input"
+                )?.value;
+                if (countStr == null) return;
+                const count = parseInt(countStr, 10);
+                if (count < 1) return;
+                const direction = dir === "left" ? "lefttop" : "rightbottom";
+                const insertRowColOp: SetContextOptions["insertRowColOp"] = {
+                  type: "column",
+                  index: position,
+                  count,
+                  direction,
+                  id: context.currentSheetId,
+                };
+                setContext(
+                  (draftCtx) => {
+                    try {
+                      insertRowCol(draftCtx, insertRowColOp);
+                      draftCtx.contextMenu = {};
+                    } catch (err: any) {
+                      if (err.message === "maxExceeded")
+                        showAlert(rightclick.columnOverLimit, "ok");
+                      else if (err.message === "readOnly")
+                        showAlert(
+                          rightclick.cannotInsertOnColumnReadOnly,
+                          "ok"
+                        );
+                      draftCtx.contextMenu = {};
                     }
-                  );
-                }}
-              >
-                <>
-                  {_.startsWith(context.lang ?? "", "zh") && (
-                    <>
-                      {rightclick.to}
-                      <span className={`luckysheet-cols-rows-shift-${dir}`}>
-                        {(rightclick as any)[dir]}
-                      </span>
-                    </>
-                  )}
-                  {`${rightclick.insert}  `}
-                  <input
-                    onClick={(e) => e.stopPropagation()}
-                    onKeyDown={(e) => e.stopPropagation()}
-                    tabIndex={0}
-                    type="text"
-                    className="luckysheet-mousedown-cancel"
-                    placeholder={rightclick.number}
-                    defaultValue="1"
-                  />
-                  <span className="luckysheet-cols-rows-shift-word luckysheet-mousedown-cancel">
-                    {`${rightclick.column}  `}
-                  </span>
-                  {!_.startsWith(context.lang ?? "", "zh") && (
+                  },
+                  {
+                    insertRowColOp,
+                  }
+                );
+              }}
+            >
+              <>
+                {_.startsWith(context.lang ?? "", "zh") && (
+                  <>
+                    {rightclick.to}
                     <span className={`luckysheet-cols-rows-shift-${dir}`}>
                       {(rightclick as any)[dir]}
                     </span>
-                  )}
-                </>
-              </Menu>
-            ));
+                  </>
+                )}
+                {`${rightclick.insert}  `}
+                <input
+                  onClick={(e) => e.stopPropagation()}
+                  onKeyDown={(e) => e.stopPropagation()}
+                  tabIndex={0}
+                  type="text"
+                  className="luckysheet-mousedown-cancel"
+                  placeholder={rightclick.number}
+                  defaultValue="1"
+                />
+                <span className="luckysheet-cols-rows-shift-word luckysheet-mousedown-cancel">
+                  {`${rightclick.column}  `}
+                </span>
+                {!_.startsWith(context.lang ?? "", "zh") && (
+                  <span className={`luckysheet-cols-rows-shift-${dir}`}>
+                    {(rightclick as any)[dir]}
+                  </span>
+                )}
+              </>
+            </Menu>
+          ));
       }
       if (name === "insert-row" && context.allowEdit) {
         return selection?.column_select
           ? null
           : ["top", "bottom"].map((dir) => (
-              <Menu
-                key={`add-row-${dir}`}
-                onClick={(e, container) => {
-                  const position =
-                    context.luckysheet_select_save?.[0]?.row?.[0];
-                  if (position == null) return;
-                  const countStr = container.querySelector("input")?.value;
-                  if (countStr == null) return;
-                  const count = parseInt(countStr, 10);
-                  if (count < 1) return;
-                  const direction = dir === "top" ? "lefttop" : "rightbottom";
-                  const insertRowColOp: SetContextOptions["insertRowColOp"] = {
-                    type: "row",
-                    index: position,
-                    count,
-                    direction,
-                    id: context.currentSheetId,
-                  };
-                  setContext(
-                    (draftCtx) => {
-                      try {
-                        insertRowCol(draftCtx, insertRowColOp);
-                        draftCtx.contextMenu = {};
-                      } catch (err: any) {
-                        if (err.message === "maxExceeded")
-                          showAlert(rightclick.rowOverLimit, "ok");
-                        else if (err.message === "readOnly")
-                          showAlert(rightclick.cannotInsertOnRowReadOnly, "ok");
-                        draftCtx.contextMenu = {};
-                      }
-                    },
-                    { insertRowColOp }
-                  );
-                }}
-              >
-                <>
-                  {_.startsWith(context.lang ?? "", "zh") && (
-                    <>
-                      {rightclick.to}
-                      <span className={`luckysheet-cols-rows-shift-${dir}`}>
-                        {(rightclick as any)[dir]}
-                      </span>
-                    </>
-                  )}
-                  {`${rightclick.insert}  `}
-                  <input
-                    onClick={(e) => e.stopPropagation()}
-                    onKeyDown={(e) => e.stopPropagation()}
-                    tabIndex={0}
-                    type="text"
-                    className="luckysheet-mousedown-cancel"
-                    placeholder={rightclick.number}
-                    defaultValue="1"
-                  />
-                  <span className="luckysheet-cols-rows-shift-word luckysheet-mousedown-cancel">
-                    {`${rightclick.row}  `}
-                  </span>
-                  {!_.startsWith(context.lang ?? "", "zh") && (
+            <Menu
+              key={`add-row-${dir}`}
+              onClick={(e, container) => {
+                const position =
+                  context.luckysheet_select_save?.[0]?.row?.[0];
+                if (position == null) return;
+                const countStr = container.querySelector("input")?.value;
+                if (countStr == null) return;
+                const count = parseInt(countStr, 10);
+                if (count < 1) return;
+                const direction = dir === "top" ? "lefttop" : "rightbottom";
+                const insertRowColOp: SetContextOptions["insertRowColOp"] = {
+                  type: "row",
+                  index: position,
+                  count,
+                  direction,
+                  id: context.currentSheetId,
+                };
+                setContext(
+                  (draftCtx) => {
+                    try {
+                      insertRowCol(draftCtx, insertRowColOp);
+                      draftCtx.contextMenu = {};
+                    } catch (err: any) {
+                      if (err.message === "maxExceeded")
+                        showAlert(rightclick.rowOverLimit, "ok");
+                      else if (err.message === "readOnly")
+                        showAlert(rightclick.cannotInsertOnRowReadOnly, "ok");
+                      draftCtx.contextMenu = {};
+                    }
+                  },
+                  { insertRowColOp }
+                );
+              }}
+            >
+              <>
+                {_.startsWith(context.lang ?? "", "zh") && (
+                  <>
+                    {rightclick.to}
                     <span className={`luckysheet-cols-rows-shift-${dir}`}>
                       {(rightclick as any)[dir]}
                     </span>
-                  )}
-                </>
-              </Menu>
-            ));
+                  </>
+                )}
+                {`${rightclick.insert}  `}
+                <input
+                  onClick={(e) => e.stopPropagation()}
+                  onKeyDown={(e) => e.stopPropagation()}
+                  tabIndex={0}
+                  type="text"
+                  className="luckysheet-mousedown-cancel"
+                  placeholder={rightclick.number}
+                  defaultValue="1"
+                />
+                <span className="luckysheet-cols-rows-shift-word luckysheet-mousedown-cancel">
+                  {`${rightclick.row}  `}
+                </span>
+                {!_.startsWith(context.lang ?? "", "zh") && (
+                  <span className={`luckysheet-cols-rows-shift-${dir}`}>
+                    {(rightclick as any)[dir]}
+                  </span>
+                )}
+              </>
+            </Menu>
+          ));
       }
       if (name === "delete-column" && context.allowEdit) {
         return (
@@ -328,7 +329,7 @@ const ContextMenu: React.FC = () => {
           )
         );
       }
-      if (name === "hide-row" && context.allowEdit) {
+      if (name === "hide-row") {
         return (
           selection?.row_select === true &&
           ["hideSelected", "showHide"].map((item) => (
@@ -621,25 +622,25 @@ const ContextMenu: React.FC = () => {
           </Menu>
         );
       }
-      if(name === "updateEntity"){
+      if (name === "updateEntity" && cell_select) {
         return (
           <Menu
             key={name}
             onClick={() => {
               setContext((draftCtx) => {
-                const selection=api.getSelection(draftCtx);
-                if(!selection || selection.length>1){
-                  showAlert(rightclick.cannotUpdateOrAddEntity,"ok");
+                const selection = api.getSelection(draftCtx);
+                if (!selection || selection.length > 1) {
+                  showAlert(rightclick.cannotUpdateOrAddEntity, "ok");
                 }
-                else{
-                  const {row:[r,re],column:[c,ce]}=selection[0];
-                  const sheet=api.getSheet(draftCtx,{id:draftCtx.currentSheetId})
-                  const sheetIndex=getSheetIndex(draftCtx,draftCtx.currentSheetId)
-                  const coordinate=api.getSelectionCoordinates(draftCtx)[0]
-                  if(sheetIndex === null){
+                else {
+                  const { row: [r, re], column: [c, ce] } = selection[0];
+                  const sheet = api.getSheet(draftCtx, { id: draftCtx.currentSheetId })
+                  const sheetIndex = getSheetIndex(draftCtx, draftCtx.currentSheetId)
+                  const coordinate = api.getSelectionCoordinates(draftCtx)[0]
+                  if (sheetIndex === null) {
                     throw new Error("no sheet index")
                   }
-                  settings.updateEntity(sheetIndex,sheet.name,{r,re,c,ce},coordinate);
+                  settings.updateEntity(sheetIndex, sheet.name, { r, re, c, ce }, coordinate);
                 }
                 draftCtx.contextMenu = {};
               });
@@ -649,13 +650,13 @@ const ContextMenu: React.FC = () => {
           </Menu>
         );
       }
-      if(name === "revertChanges"){
+      if (name === "revertChanges" && cell_select) {
         return (
           <Menu
             key={name}
             onClick={() => {
               settings.revertChanges();
-              setContext((draftCtx)=>{
+              setContext((draftCtx) => {
                 draftCtx.contextMenu = {};
               })
             }}
@@ -664,37 +665,37 @@ const ContextMenu: React.FC = () => {
           </Menu>
         );
       }
-      if(name === "CHECK"){
+      if (name === "CHECK" && cell_select) {
         return (
           <Menu
             key={name}
             onClick={() => {
               setContext((draftCtx) => {
-                const selection=api.getSelection(draftCtx);
-                if(!selection || selection.length>1){
-                  showAlert(rightclick.cannotUpdateOrAddEntity,"ok");
+                const selection = api.getSelection(draftCtx);
+                if (!selection || selection.length > 1) {
+                  showAlert(rightclick.cannotUpdateOrAddEntity, "ok");
                 }
-                else{
-                  const {row:[r,re],column:[c,ce]}=selection[0];
-                  const sheet=api.getSheet(draftCtx,{id:draftCtx.currentSheetId})
-                  const sheetIndex=getSheetIndex(draftCtx,draftCtx.currentSheetId)
-                  const coordinate=api.getSelectionCoordinates(draftCtx)[0]
-                  if(sheetIndex === null){
+                else {
+                  const { row: [r, re], column: [c, ce] } = selection[0];
+                  const sheet = api.getSheet(draftCtx, { id: draftCtx.currentSheetId })
+                  const sheetIndex = getSheetIndex(draftCtx, draftCtx.currentSheetId)
+                  const coordinate = api.getSelectionCoordinates(draftCtx)[0]
+                  if (sheetIndex === null) {
                     throw new Error("no sheet index")
                   }
-                  settings.submitRange(sheetIndex,sheet.name,{r,re,c,ce},coordinate);
+                  settings.submitRange(sheetIndex, sheet.name, { r, re, c, ce }, coordinate);
                 }
                 draftCtx.contextMenu = {};
               });
-              
+
             }}
           >
-              <SVGIcon name="check" width={20} height={20}/>
+            <SVGIcon name="check" width={20} height={20} />
           </Menu>
         );
       }
-      if(name === "Add Global Entity"){
-        if(contextMenu.isTable || settings.contextMenuState === 'TABLE'){
+      if (name === "Add Global Entity" && cell_select) {
+        if (contextMenu.isTable || settings.contextMenuState === 'TABLE') {
           return null
         }
         return (
@@ -702,31 +703,31 @@ const ContextMenu: React.FC = () => {
             key={name}
             onClick={() => {
               setContext((draftCtx) => {
-                const selection=api.getSelection(draftCtx);
-                if(!selection || selection.length>1){
-                  showAlert(rightclick.cannotUpdateOrAddEntity,"ok");
+                const selection = api.getSelection(draftCtx);
+                if (!selection || selection.length > 1) {
+                  showAlert(rightclick.cannotUpdateOrAddEntity, "ok");
                 }
-                else{
-                  const {row:[r,re],column:[c,ce]}=selection[0];
-                  const sheet=api.getSheet(draftCtx,{id:draftCtx.currentSheetId})
-                  const sheetIndex=getSheetIndex(draftCtx,draftCtx.currentSheetId)
-                  const coordinate=api.getSelectionCoordinates(draftCtx)[0]
-                  if(sheetIndex === null){
+                else {
+                  const { row: [r, re], column: [c, ce] } = selection[0];
+                  const sheet = api.getSheet(draftCtx, { id: draftCtx.currentSheetId })
+                  const sheetIndex = getSheetIndex(draftCtx, draftCtx.currentSheetId)
+                  const coordinate = api.getSelectionCoordinates(draftCtx)[0]
+                  if (sheetIndex === null) {
                     throw new Error("no sheet index")
                   }
-                  settings.addEntity(sheetIndex,sheet.name,{r,re,c,ce},coordinate,'',Boolean(contextMenu.isTable),true);
+                  settings.addEntity(sheetIndex, sheet.name, { r, re, c, ce }, coordinate, '', Boolean(contextMenu.isTable), true);
                 }
                 draftCtx.contextMenu = {};
               });
-              
+
             }}
           >
-              Add Global Entity
+            Add Global Entity
           </Menu>
         );
       }
-      if(name === "Add Fee"){
-        if(contextMenu.isTable || settings.contextMenuState === 'TABLE'){
+      if (name === "Add Fee" && cell_select) {
+        if (contextMenu.isTable || settings.contextMenuState === 'TABLE') {
           return null
         }
         return (
@@ -734,31 +735,31 @@ const ContextMenu: React.FC = () => {
             key={name}
             onClick={() => {
               setContext((draftCtx) => {
-                const selection=api.getSelection(draftCtx);
-                if(!selection || selection.length>1){
-                  showAlert(rightclick.cannotUpdateOrAddEntity,"ok");
+                const selection = api.getSelection(draftCtx);
+                if (!selection || selection.length > 1) {
+                  showAlert(rightclick.cannotUpdateOrAddEntity, "ok");
                 }
-                else{
-                  const {row:[r,re],column:[c,ce]}=selection[0];
-                  const sheet=api.getSheet(draftCtx,{id:draftCtx.currentSheetId})
-                  const sheetIndex=getSheetIndex(draftCtx,draftCtx.currentSheetId)
-                  const coordinate=api.getSelectionCoordinates(draftCtx)[0]
-                  if(sheetIndex === null){
+                else {
+                  const { row: [r, re], column: [c, ce] } = selection[0];
+                  const sheet = api.getSheet(draftCtx, { id: draftCtx.currentSheetId })
+                  const sheetIndex = getSheetIndex(draftCtx, draftCtx.currentSheetId)
+                  const coordinate = api.getSelectionCoordinates(draftCtx)[0]
+                  if (sheetIndex === null) {
                     throw new Error("no sheet index")
                   }
-                  settings.addEntity(sheetIndex,sheet.name,{r,re,c,ce},coordinate,"General Fee",Boolean(contextMenu.isTable),true);
+                  settings.addEntity(sheetIndex, sheet.name, { r, re, c, ce }, coordinate, "General Fee", Boolean(contextMenu.isTable), true);
                 }
                 draftCtx.contextMenu = {};
               });
-              
+
             }}
           >
-              Add Fee
+            Add Fee
           </Menu>
         );
       }
-      if(name === "Override Value"){
-        if(contextMenu.isTable || settings.contextMenuState === 'TABLE'){
+      if (name === "Override Value" && cell_select) {
+        if (contextMenu.isTable || settings.contextMenuState === 'TABLE') {
           return null
         }
         return (
@@ -766,31 +767,31 @@ const ContextMenu: React.FC = () => {
             key={name}
             onClick={() => {
               setContext((draftCtx) => {
-                const selection=api.getSelection(draftCtx);
-                if(!selection || selection.length>1){
-                  showAlert(rightclick.cannotUpdateOrAddEntity,"ok");
+                const selection = api.getSelection(draftCtx);
+                if (!selection || selection.length > 1) {
+                  showAlert(rightclick.cannotUpdateOrAddEntity, "ok");
                 }
-                else{
-                  const {row:[r,re],column:[c,ce]}=selection[0];
-                  const sheet=api.getSheet(draftCtx,{id:draftCtx.currentSheetId})
-                  const sheetIndex=getSheetIndex(draftCtx,draftCtx.currentSheetId)
-                  const coordinate=api.getSelectionCoordinates(draftCtx)[0]
-                  if(sheetIndex === null){
+                else {
+                  const { row: [r, re], column: [c, ce] } = selection[0];
+                  const sheet = api.getSheet(draftCtx, { id: draftCtx.currentSheetId })
+                  const sheetIndex = getSheetIndex(draftCtx, draftCtx.currentSheetId)
+                  const coordinate = api.getSelectionCoordinates(draftCtx)[0]
+                  if (sheetIndex === null) {
                     throw new Error("no sheet index")
                   }
-                  settings.addEntity(sheetIndex,sheet.name,{r,re,c,ce},coordinate,"Override Value",Boolean(contextMenu.isTable),true);
+                  settings.addEntity(sheetIndex, sheet.name, { r, re, c, ce }, coordinate, "Override Value", Boolean(contextMenu.isTable), true);
                 }
                 draftCtx.contextMenu = {};
               });
-              
+
             }}
           >
-              Override Value
+            Override Value
           </Menu>
         );
       }
-      if(name === "Routes Table"){
-        if(!contextMenu.isTable || settings.contextMenuState === 'CELL'){
+      if (name === "Routes Table" && cell_select) {
+        if (!contextMenu.isTable || settings.contextMenuState === 'CELL') {
           return null
         }
         return (
@@ -798,31 +799,31 @@ const ContextMenu: React.FC = () => {
             key={name}
             onClick={() => {
               setContext((draftCtx) => {
-                const selection=api.getSelection(draftCtx);
-                if(!selection || selection.length>1){
-                  showAlert(rightclick.cannotUpdateOrAddEntity,"ok");
+                const selection = api.getSelection(draftCtx);
+                if (!selection || selection.length > 1) {
+                  showAlert(rightclick.cannotUpdateOrAddEntity, "ok");
                 }
-                else{
-                  const {row:[r,re],column:[c,ce]}=selection[0];
-                  const sheet=api.getSheet(draftCtx,{id:draftCtx.currentSheetId})
-                  const sheetIndex=getSheetIndex(draftCtx,draftCtx.currentSheetId)
-                  const coordinate=api.getSelectionCoordinates(draftCtx)[0]
-                  if(sheetIndex === null){
+                else {
+                  const { row: [r, re], column: [c, ce] } = selection[0];
+                  const sheet = api.getSheet(draftCtx, { id: draftCtx.currentSheetId })
+                  const sheetIndex = getSheetIndex(draftCtx, draftCtx.currentSheetId)
+                  const coordinate = api.getSelectionCoordinates(draftCtx)[0]
+                  if (sheetIndex === null) {
                     throw new Error("no sheet index")
                   }
-                  settings.addEntity(sheetIndex,sheet.name,{r,re,c,ce},coordinate,"Routes Table",Boolean(contextMenu.isTable));
+                  settings.addEntity(sheetIndex, sheet.name, { r, re, c, ce }, coordinate, "Routes Table", Boolean(contextMenu.isTable));
                 }
                 draftCtx.contextMenu = {};
               });
-              
+
             }}
           >
-              Setup Routes Table
+            Setup Routes Table
           </Menu>
         );
       }
-      if(name === "Transshipment"){
-        if(!contextMenu.isTable || settings.contextMenuState === 'CELL'){
+      if (name === "Transshipment" && cell_select) {
+        if (!contextMenu.isTable || settings.contextMenuState === 'CELL') {
           return null
         }
         return (
@@ -830,110 +831,110 @@ const ContextMenu: React.FC = () => {
             key={name}
             onClick={() => {
               setContext((draftCtx) => {
-                const selection=api.getSelection(draftCtx);
-                if(!selection || selection.length>1){
-                  showAlert(rightclick.cannotUpdateOrAddEntity,"ok");
+                const selection = api.getSelection(draftCtx);
+                if (!selection || selection.length > 1) {
+                  showAlert(rightclick.cannotUpdateOrAddEntity, "ok");
                 }
-                else{
-                  const {row:[r,re],column:[c,ce]}=selection[0];
-                  const sheet=api.getSheet(draftCtx,{id:draftCtx.currentSheetId})
-                  const sheetIndex=getSheetIndex(draftCtx,draftCtx.currentSheetId)
-                  const coordinate=api.getSelectionCoordinates(draftCtx)[0]
-                  if(sheetIndex === null){
+                else {
+                  const { row: [r, re], column: [c, ce] } = selection[0];
+                  const sheet = api.getSheet(draftCtx, { id: draftCtx.currentSheetId })
+                  const sheetIndex = getSheetIndex(draftCtx, draftCtx.currentSheetId)
+                  const coordinate = api.getSelectionCoordinates(draftCtx)[0]
+                  if (sheetIndex === null) {
                     throw new Error("no sheet index")
                   }
-                  settings.addEntity(sheetIndex,sheet.name,{r,re,c,ce},coordinate,"Transshipment",Boolean(contextMenu.isTable));
+                  settings.addEntity(sheetIndex, sheet.name, { r, re, c, ce }, coordinate, "Transshipment", Boolean(contextMenu.isTable));
                 }
                 draftCtx.contextMenu = {};
               });
-              
+
             }}
           >
-              Transshipment
+            Transshipment
           </Menu>
         );
       }
-      if(name === "Ignore cells"){
+      if (name === "Ignore cells" && cell_select) {
         return (
           <Menu
             key={name}
             onClick={() => {
               setContext((draftCtx) => {
-                const selection=api.getSelection(draftCtx);
-                if(!selection || selection.length>1){
-                  showAlert(rightclick.cannotUpdateOrAddEntity,"ok");
+                const selection = api.getSelection(draftCtx);
+                if (!selection || selection.length > 1) {
+                  showAlert(rightclick.cannotUpdateOrAddEntity, "ok");
                 }
-                else{
-                  const {row:[r,re],column:[c,ce]}=selection[0];
-                  const sheet=api.getSheet(draftCtx,{id:draftCtx.currentSheetId})
-                  const sheetIndex=getSheetIndex(draftCtx,draftCtx.currentSheetId)
-                  const coordinate=api.getSelectionCoordinates(draftCtx)[0]
-                  if(sheetIndex === null){
+                else {
+                  const { row: [r, re], column: [c, ce] } = selection[0];
+                  const sheet = api.getSheet(draftCtx, { id: draftCtx.currentSheetId })
+                  const sheetIndex = getSheetIndex(draftCtx, draftCtx.currentSheetId)
+                  const coordinate = api.getSelectionCoordinates(draftCtx)[0]
+                  if (sheetIndex === null) {
                     throw new Error("no sheet index")
                   }
-                  settings.addEntityIgnore(sheetIndex,sheet.name,{r,re,c,ce},coordinate);
+                  settings.addEntityIgnore(sheetIndex, sheet.name, { r, re, c, ce }, coordinate);
                 }
                 draftCtx.contextMenu = {};
               });
-              
+
             }}
           >
-              Ignore cells
+            Ignore cells
           </Menu>
         );
       }
-      if(name === "Ignore Route"){
+      if (name === "Ignore Route" && cell_select) {
         return (
           <Menu
             key={name}
             onClick={() => {
               setContext((draftCtx) => {
-                const selection=api.getSelection(draftCtx);
-                if(!selection || selection.length>1){
-                  showAlert(rightclick.cannotUpdateOrAddEntity,"ok");
+                const selection = api.getSelection(draftCtx);
+                if (!selection || selection.length > 1) {
+                  showAlert(rightclick.cannotUpdateOrAddEntity, "ok");
                 }
-                else{
-                  const {row:[r,re],column:[c,ce]}=selection[0];
-                  const sheet=api.getSheet(draftCtx,{id:draftCtx.currentSheetId})
-                  const sheetIndex=getSheetIndex(draftCtx,draftCtx.currentSheetId)
-                  const coordinate=api.getSelectionCoordinates(draftCtx)[0]
-                  if(sheetIndex === null){
+                else {
+                  const { row: [r, re], column: [c, ce] } = selection[0];
+                  const sheet = api.getSheet(draftCtx, { id: draftCtx.currentSheetId })
+                  const sheetIndex = getSheetIndex(draftCtx, draftCtx.currentSheetId)
+                  const coordinate = api.getSelectionCoordinates(draftCtx)[0]
+                  if (sheetIndex === null) {
                     throw new Error("no sheet index")
                   }
-                  settings.addEntityIgnore(sheetIndex,sheet.name,{r,re,c,ce},coordinate,true);
+                  settings.addEntityIgnore(sheetIndex, sheet.name, { r, re, c, ce }, coordinate, true);
                 }
                 draftCtx.contextMenu = {};
               });
-              
+
             }}
           >
-              Ignore Route
+            Ignore Route
           </Menu>
         );
       }
-      if(!contextMenu.isTable && settings.contextMenuState === 'CELL'){
+      if (!contextMenu.isTable && settings.contextMenuState === 'CELL' && cell_select) {
         return (
           <Menu
             key={name}
             onClick={() => {
               setContext((draftCtx) => {
-                const selection=api.getSelection(draftCtx);
-                if(!selection || selection.length>1){
-                  showAlert(rightclick.cannotUpdateOrAddEntity,"ok");
+                const selection = api.getSelection(draftCtx);
+                if (!selection || selection.length > 1) {
+                  showAlert(rightclick.cannotUpdateOrAddEntity, "ok");
                 }
-                else{
-                  const {row:[r,re],column:[c,ce]}=selection[0];
-                  const sheet=api.getSheet(draftCtx,{id:draftCtx.currentSheetId})
-                  const sheetIndex=getSheetIndex(draftCtx,draftCtx.currentSheetId)
-                  const coordinate=api.getSelectionCoordinates(draftCtx)[0]
-                  if(sheetIndex === null){
+                else {
+                  const { row: [r, re], column: [c, ce] } = selection[0];
+                  const sheet = api.getSheet(draftCtx, { id: draftCtx.currentSheetId })
+                  const sheetIndex = getSheetIndex(draftCtx, draftCtx.currentSheetId)
+                  const coordinate = api.getSelectionCoordinates(draftCtx)[0]
+                  if (sheetIndex === null) {
                     throw new Error("no sheet index")
                   }
-                  settings.addEntity(sheetIndex,sheet.name,{r,re,c,ce},coordinate,name,Boolean(contextMenu.isTable));
+                  settings.addEntity(sheetIndex, sheet.name, { r, re, c, ce }, coordinate, name, Boolean(contextMenu.isTable));
                 }
                 draftCtx.contextMenu = {};
               });
-              
+
             }}
           >
             {name}
@@ -1010,7 +1011,7 @@ const ContextMenu: React.FC = () => {
     >
       {context.contextMenu.headerMenu === true
         ? settings.headerContextMenu.map((menu, i) => getMenuElement(menu, i))
-        : settings.cellContextMenu.map((menu, i) => getMenuElement(menu, i))} 
+        : settings.cellContextMenu.map((menu, i) => getMenuElement(menu, i))}
     </div>
   );
 };
