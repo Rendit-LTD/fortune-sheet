@@ -35,7 +35,7 @@ export function getCellValue(
   let ret;
 
   if (cellData && _.isPlainObject(cellData)) {
-    console.log(row,column,cellData);
+    //console.log(row,column,cellData);
     ret = cellData[type];
 
     if (type === "f" && ret != null) {
@@ -196,17 +196,17 @@ export function setCellToolTip(
   ctx: Context,
   row: number,
   column: number,
-  text:string,
+  text: string,
   options: CommonOptions = {}
-){
+) {
   if (!_.isNumber(row) || !_.isNumber(column)) {
     throw new Error("row or column cannot be null or undefined");
   }
   const sheet = getSheet(ctx, options);
-  if(!sheet.tooltip){
-    sheet.tooltip={}
+  if (!sheet.tooltip) {
+    sheet.tooltip = {};
   }
-  sheet.tooltip[`${row}_${column}`]=text
+  sheet.tooltip[`${row}_${column}`] = text;
 }
 
 export function removeCellToolTip(
@@ -214,15 +214,15 @@ export function removeCellToolTip(
   row: number,
   column: number,
   options: CommonOptions = {}
-){
+) {
   if (!_.isNumber(row) || !_.isNumber(column)) {
     throw new Error("row or column cannot be null or undefined");
   }
   const sheet = getSheet(ctx, options);
-  if(!sheet.tooltip){
-    return
+  if (!sheet.tooltip) {
+    return;
   }
-  delete sheet.tooltip[`${row}_${column}`]
+  delete sheet.tooltip[`${row}_${column}`];
 }
 
 export function setCellFormat(

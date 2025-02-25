@@ -130,24 +130,28 @@ export function generateAPIs(
       value: any,
       options: api.CommonOptions = {}
     ) =>
-      setContext((draftCtx) =>
-        api.setCellFormat(draftCtx, row, column, attr, value, options)
-      ),
+      setContext((draftCtx) => {
+        try {
+          api.setCellFormat(draftCtx, row, column, attr, value, options);
+        } catch (e) {
+          console.error(e);
+        }
+      }),
     setCellToolTip: (
-      row:number,
-      column:number,
-      text:string,
+      row: number,
+      column: number,
+      text: string,
       options: api.CommonOptions = {}
     ) =>
-      setContext((draftCtx)=>
+      setContext((draftCtx) =>
         api.setCellToolTip(draftCtx, row, column, text, options)
       ),
     removeCellToolTip: (
-      row:number,
-      column:number,
+      row: number,
+      column: number,
       options: api.CommonOptions = {}
     ) =>
-      setContext((draftCtx)=>
+      setContext((draftCtx) =>
         api.removeCellToolTip(draftCtx, row, column, options)
       ),
 
@@ -244,9 +248,13 @@ export function generateAPIs(
       range: Range | SingleRange,
       options: api.CommonOptions = {}
     ) =>
-      setContext((draftCtx) =>
-        api.setCellFormatByRange(draftCtx, attr, value, range, options)
-      ),
+      setContext((draftCtx) => {
+        try {
+          api.setCellFormatByRange(draftCtx, attr, value, range, options);
+        } catch (e) {
+          console.error(e);
+        }
+      }),
 
     mergeCells: (
       ranges: Range,
@@ -280,14 +288,12 @@ export function generateAPIs(
     setSheetOrder: (orderList: Record<string, number>) =>
       setContext((draftCtx) => api.setSheetOrder(draftCtx, orderList)),
 
-    scroll: (
-      options: {
-        scrollLeft?: number;
-        scrollTop?: number;
-        targetRow?: number;
-        targetColumn?: number;
-      },
-    ) =>api.scroll(context, scrollbarX, scrollbarY, options),
+    scroll: (options: {
+      scrollLeft?: number;
+      scrollTop?: number;
+      targetRow?: number;
+      targetColumn?: number;
+    }) => api.scroll(context, scrollbarX, scrollbarY, options),
 
     addPresences: (newPresences: Presence[]) => {
       setContext((draftCtx) => {
