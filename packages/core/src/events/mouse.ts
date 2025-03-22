@@ -133,7 +133,7 @@ export function handleGlobalWheel(
   let rowscroll = 0;
 
   // TODO const scrollNum = e.deltaFactor < 40 ? 1 : e.deltaFactor < 80 ? 2 : 3;
-  const scrollNum = 2;//1;
+  const scrollNum = 2; //1;
 
   // 一次滚动三行或三列
   if (e.deltaY !== 0) {
@@ -224,226 +224,376 @@ export function handleCellAreaMouseDown(
   fxInput?: HTMLDivElement | null,
   canvas?: CanvasRenderingContext2D
 ) {
-  try{
-  ctx.contextMenu = {};
-  ctx.filterContextMenu = undefined;
-  const flowdata = getFlowdata(ctx);
-  if (!flowdata) return;
-  // //有批注在编辑时
-  removeEditingComment(ctx, globalCache);
-  // TODO set MouseDown state to context
-  // const mouse = mousePosition(
-  //   e.nativeEvent.offsetX,
-  //   e.nativeEvent.offsetY,
-  //   context
-  // );
-  cancelActiveImgItem(ctx, globalCache);
-  const rect = container.getBoundingClientRect();
-  const mouseX = e.pageX - rect.left - window.scrollX;
-  const mouseY = e.pageY - rect.top - window.scrollY;
-  const _x = mouseX + ctx.scrollLeft;
-  const _y = mouseY + ctx.scrollTop;
-  if (_x >= rect.width + ctx.scrollLeft || _y >= rect.height + ctx.scrollTop) {
-    return;
-  }
-  const freeze = globalCache.freezen?.[ctx.currentSheetId];
-  const { x, y, inHorizontalFreeze, inVerticalFreeze } =
-    fixPositionOnFrozenCells(freeze, _x, _y, mouseX, mouseY);
-
-  const row_location = rowLocation(y, ctx.visibledatarow);
-  let row = row_location[1];
-  let row_pre = row_location[0];
-  let row_index = row_location[2];
-
-  const col_location = colLocation(x, ctx.visibledatacolumn);
-  let col = col_location[1];
-  let col_pre = col_location[0];
-  let col_index = col_location[2];
-
-  let row_index_ed = row_index;
-  let col_index_ed = col_index;
-  const margeset = mergeBorder(ctx, flowdata, row_index, col_index);
-  if (margeset) {
-    [row_pre, row, row_index, row_index_ed] = margeset.row;
-    [col_pre, col, col_index, col_index_ed] = margeset.column;
-  }
-
-  showLinkCard(ctx, row_index, col_index, false, true);
-  showToolTipCard(ctx, row_index, col_index, true)
-  // //单元格单击之前
-  if (
-    ctx.hooks.beforeCellMouseDown?.(flowdata[row_index]?.[col_index], {
-      row: row_index,
-      column: col_index,
-      startRow: row_pre,
-      startColumn: col_pre,
-      endRow: row,
-      endColumn: col,
-    }) === false
-  ) {
-    return;
-  }
-
-  // //数据验证 单元格聚焦
-  cellFocus(ctx, row_index, col_index, true);
-
-  // 若点击单元格部分不在视图内
-  if (!inHorizontalFreeze && !inVerticalFreeze) {
-    if (col_pre < ctx.scrollLeft) {
-      ctx.scrollLeft = col_pre;
-    }
-
-    if (row_pre < ctx.scrollTop) {
-      ctx.scrollTop = row_pre;
-    }
-  }
-
-  // //mousedown是右键
-  if (e.button === 2) {
-    // $("#luckysheet-dataVerification-showHintBox").hide();
-
-    // 如果右键在选区内, 停止mousedown处理
-    const isInSelection = _.some(
-      ctx.luckysheet_select_save,
-      (obj_s) =>
-        obj_s.row != null &&
-        row_index >= obj_s.row[0] &&
-        row_index <= obj_s.row[1] &&
-        col_index >= obj_s.column[0] &&
-        col_index <= obj_s.column[1]
-    );
-    if (isInSelection) return;
-  }
-
-  // //单元格数据下钻
-  // if (
-  //   ctx.flowdata[row_index] != null &&
-  //   ctx.flowdata[row_index][col_index] != null &&
-  //   ctx.flowdata[row_index][col_index].dd != null
-  // ) {
-  //   if (
-  //     luckysheetConfigsetting.fireMousedown != null &&
-  //     getObjType(luckysheetConfigsetting.fireMousedown) == "function"
-  //   ) {
-  //     luckysheetConfigsetting.fireMousedown(
-  //       ctx.flowdata[row_index][col_index].dd
-  //     );
-  //     return;
-  //   }
-  // }
-
-  // //链接 单元格聚焦
-  // if (
-  //   hyperlinkCtrl.hyperlink &&
-  //   hyperlinkCtrl.hyperlink[row_index + "_" + col_index] &&
-  //   event.which != "3"
-  // ) {
-  //   hyperlinkCtrl.cellFocus(row_index, col_index);
-  //   return;
-  // }
-
-  ctx.luckysheet_scroll_status = true;
-
-  // 公式相关
-  if (ctx.luckysheetCellUpdate.length > 0) {
+  try {
+    ctx.contextMenu = {};
+    ctx.filterContextMenu = undefined;
+    const flowdata = getFlowdata(ctx);
+    if (!flowdata) return;
+    // //有批注在编辑时
+    removeEditingComment(ctx, globalCache);
+    // TODO set MouseDown state to context
+    // const mouse = mousePosition(
+    //   e.nativeEvent.offsetX,
+    //   e.nativeEvent.offsetY,
+    //   context
+    // );
+    cancelActiveImgItem(ctx, globalCache);
+    const rect = container.getBoundingClientRect();
+    const mouseX = e.pageX - rect.left - window.scrollX;
+    const mouseY = e.pageY - rect.top - window.scrollY;
+    const _x = mouseX + ctx.scrollLeft;
+    const _y = mouseY + ctx.scrollTop;
     if (
-      ctx.formulaCache.rangestart ||
-      ctx.formulaCache.rangedrag_column_start ||
-      ctx.formulaCache.rangedrag_row_start ||
-      israngeseleciton(ctx)
+      _x >= rect.width + ctx.scrollLeft ||
+      _y >= rect.height + ctx.scrollTop
     ) {
-      // 公式选区
-      let rowseleted = [row_index, row_index_ed];
-      let columnseleted = [col_index, col_index_ed];
+      return;
+    }
+    const freeze = globalCache.freezen?.[ctx.currentSheetId];
+    const { x, y, inHorizontalFreeze, inVerticalFreeze } =
+      fixPositionOnFrozenCells(freeze, _x, _y, mouseX, mouseY);
 
-      let left = col_pre;
-      let width = col - col_pre - 1;
-      let top = row_pre;
-      let height = row - row_pre - 1;
+    const row_location = rowLocation(y, ctx.visibledatarow);
+    let row = row_location[1];
+    let row_pre = row_location[0];
+    let row_index = row_location[2];
 
-      if (e.shiftKey) {
-        const last = ctx.formulaCache.func_selectedrange;
+    const col_location = colLocation(x, ctx.visibledatacolumn);
+    let col = col_location[1];
+    let col_pre = col_location[0];
+    let col_index = col_location[2];
 
-        top = 0;
-        height = 0;
-        rowseleted = [];
+    let row_index_ed = row_index;
+    let col_index_ed = col_index;
+    const margeset = mergeBorder(ctx, flowdata, row_index, col_index);
+    if (margeset) {
+      [row_pre, row, row_index, row_index_ed] = margeset.row;
+      [col_pre, col, col_index, col_index_ed] = margeset.column;
+    }
 
-        if (
-          last == null ||
-          last.top == null ||
-          last.height == null ||
-          last.row_focus == null ||
-          last.left == null ||
-          last.width == null
-        )
-          return;
-        if (last.top > row_pre) {
-          top = row_pre;
-          height = last.top + last.height - row_pre;
+    showLinkCard(ctx, row_index, col_index, false, true);
+    showToolTipCard(ctx, row_index, col_index, true);
+    // //单元格单击之前
+    if (
+      ctx.hooks.beforeCellMouseDown?.(flowdata[row_index]?.[col_index], {
+        row: row_index,
+        column: col_index,
+        startRow: row_pre,
+        startColumn: col_pre,
+        endRow: row,
+        endColumn: col,
+      }) === false
+    ) {
+      return;
+    }
 
-          if (last.row[1] > last.row_focus) {
-            last.row[1] = last.row_focus;
+    // //数据验证 单元格聚焦
+    cellFocus(ctx, row_index, col_index, true);
+
+    // 若点击单元格部分不在视图内
+    if (!inHorizontalFreeze && !inVerticalFreeze) {
+      if (col_pre < ctx.scrollLeft) {
+        ctx.scrollLeft = col_pre;
+      }
+
+      if (row_pre < ctx.scrollTop) {
+        ctx.scrollTop = row_pre;
+      }
+    }
+
+    // //mousedown是右键
+    if (e.button === 2) {
+      // $("#luckysheet-dataVerification-showHintBox").hide();
+
+      // 如果右键在选区内, 停止mousedown处理
+      const isInSelection = _.some(
+        ctx.luckysheet_select_save,
+        (obj_s) =>
+          obj_s.row != null &&
+          row_index >= obj_s.row[0] &&
+          row_index <= obj_s.row[1] &&
+          col_index >= obj_s.column[0] &&
+          col_index <= obj_s.column[1]
+      );
+      if (isInSelection) return;
+    }
+
+    // //单元格数据下钻
+    // if (
+    //   ctx.flowdata[row_index] != null &&
+    //   ctx.flowdata[row_index][col_index] != null &&
+    //   ctx.flowdata[row_index][col_index].dd != null
+    // ) {
+    //   if (
+    //     luckysheetConfigsetting.fireMousedown != null &&
+    //     getObjType(luckysheetConfigsetting.fireMousedown) == "function"
+    //   ) {
+    //     luckysheetConfigsetting.fireMousedown(
+    //       ctx.flowdata[row_index][col_index].dd
+    //     );
+    //     return;
+    //   }
+    // }
+
+    // //链接 单元格聚焦
+    // if (
+    //   hyperlinkCtrl.hyperlink &&
+    //   hyperlinkCtrl.hyperlink[row_index + "_" + col_index] &&
+    //   event.which != "3"
+    // ) {
+    //   hyperlinkCtrl.cellFocus(row_index, col_index);
+    //   return;
+    // }
+
+    ctx.luckysheet_scroll_status = true;
+
+    // 公式相关
+    if (ctx.luckysheetCellUpdate.length > 0) {
+      if (
+        ctx.formulaCache.rangestart ||
+        ctx.formulaCache.rangedrag_column_start ||
+        ctx.formulaCache.rangedrag_row_start ||
+        israngeseleciton(ctx)
+      ) {
+        // 公式选区
+        let rowseleted = [row_index, row_index_ed];
+        let columnseleted = [col_index, col_index_ed];
+
+        let left = col_pre;
+        let width = col - col_pre - 1;
+        let top = row_pre;
+        let height = row - row_pre - 1;
+
+        if (e.shiftKey) {
+          const last = ctx.formulaCache.func_selectedrange;
+
+          top = 0;
+          height = 0;
+          rowseleted = [];
+
+          if (
+            last == null ||
+            last.top == null ||
+            last.height == null ||
+            last.row_focus == null ||
+            last.left == null ||
+            last.width == null
+          )
+            return;
+          if (last.top > row_pre) {
+            top = row_pre;
+            height = last.top + last.height - row_pre;
+
+            if (last.row[1] > last.row_focus) {
+              last.row[1] = last.row_focus;
+            }
+
+            rowseleted = [row_index, last.row[1]];
+          } else if (last.top === row_pre) {
+            top = row_pre;
+            height = last.top + last.height - row_pre;
+            rowseleted = [row_index, last.row[0]];
+          } else {
+            top = last.top;
+            height = row - last.top - 1;
+
+            if (last.row[0] < last.row_focus) {
+              last.row[0] = last.row_focus;
+            }
+
+            rowseleted = [last.row[0], row_index];
           }
 
-          rowseleted = [row_index, last.row[1]];
-        } else if (last.top === row_pre) {
-          top = row_pre;
-          height = last.top + last.height - row_pre;
-          rowseleted = [row_index, last.row[0]];
+          left = 0;
+          width = 0;
+          columnseleted = [];
+          if (last.left > col_pre) {
+            left = col_pre;
+            width = last.left + last.width - col_pre;
+            if (last.column == null || last.column_focus == null) return;
+            if (last.column[1] > last.column_focus) {
+              last.column[1] = last.column_focus;
+            }
+
+            columnseleted = [col_index, last.column[1]];
+          } else if (last.left === col_pre) {
+            left = col_pre;
+            width = last.left + last.width - col_pre;
+            columnseleted = [col_index, last.column[0]];
+          } else {
+            left = last.left;
+            width = col - last.left - 1;
+            if (last.column == null || last.column_focus == null) return;
+
+            if (last.column[0] < last.column_focus) {
+              last.column[0] = last.column_focus;
+            }
+
+            columnseleted = [last.column[0], col_index];
+          }
+
+          const changeparam = mergeMoveMain(
+            ctx,
+            columnseleted,
+            rowseleted,
+            last,
+            top,
+            height,
+            left,
+            width
+          );
+          if (changeparam != null) {
+            // @ts-ignore
+            [columnseleted, rowseleted, top, height, left, width] = changeparam;
+          }
+
+          // luckysheet_count_show(
+          //   left,
+          //   top,
+          //   width,
+          //   height,
+          //   rowseleted,
+          //   columnseleted
+          // ); //先不搞
+
+          last.row = rowseleted;
+          last.column = columnseleted;
+
+          last.left_move = left;
+          last.width_move = width;
+          last.top_move = top;
+          last.height_move = height;
+
+          ctx.formulaCache.func_selectedrange = last;
+        } else if (
+          e.ctrlKey &&
+          _.last(cellInput.querySelectorAll("span"))?.innerText !== ","
+        ) {
+          // 按住ctrl 选择选区时  先处理上一个选区
+          let vText = cellInput.innerText;
+
+          if (vText[vText.length - 1] === ")") {
+            vText = vText.substring(0, vText.length - 1); // 先删除最后侧的圆括号)
+          }
+
+          if (vText.length > 0) {
+            const lastWord = vText.substring(vText.length - 1, 1);
+            if (lastWord !== "," && lastWord !== "=" && lastWord !== "(") {
+              vText += ",";
+            }
+          }
+          if (vText.length > 0 && vText.substring(0, 1) === "=") {
+            vText = functionHTMLGenerate(vText);
+
+            if (window.getSelection) {
+              // all browsers, except IE before version 9
+              const currSelection = window.getSelection();
+              if (currSelection == null) return;
+              ctx.formulaCache.functionRangeIndex = [
+                _.indexOf(
+                  currSelection.anchorNode?.parentNode?.parentNode?.childNodes,
+                  // @ts-ignore
+                  currSelection.anchorNode?.parentNode
+                ),
+                currSelection.anchorOffset,
+              ];
+            } else {
+              // Internet Explorer before version 9
+              // @ts-ignore
+              const textRange = document.selection.createRange();
+              ctx.formulaCache.functionRangeIndex = textRange;
+            }
+
+            /* 在显示前重新 + 右侧的圆括号) */
+            cellInput.innerHTML = vText;
+
+            cancelFunctionrangeSelected(ctx);
+            createRangeHightlight(ctx, vText);
+          }
+
+          ctx.formulaCache.rangestart = false;
+          ctx.formulaCache.rangedrag_column_start = false;
+          ctx.formulaCache.rangedrag_row_start = false;
+
+          if (fxInput) fxInput.innerHTML = vText;
+
+          rangeHightlightselected(ctx, cellInput);
+
+          // 再进行 选区的选择
+          israngeseleciton(ctx);
+          ctx.formulaCache.func_selectedrange = {
+            left,
+            width,
+            top,
+            height,
+            left_move: left,
+            width_move: width,
+            top_move: top,
+            height_move: height,
+            row: rowseleted,
+            column: columnseleted,
+            row_focus: row_index,
+            column_focus: col_index,
+          };
         } else {
-          top = last.top;
-          height = row - last.top - 1;
-
-          if (last.row[0] < last.row_focus) {
-            last.row[0] = last.row_focus;
-          }
-
-          rowseleted = [last.row[0], row_index];
+          ctx.formulaCache.func_selectedrange = {
+            left,
+            width,
+            top,
+            height,
+            left_move: left,
+            width_move: width,
+            top_move: top,
+            height_move: height,
+            row: rowseleted,
+            column: columnseleted,
+            row_focus: row_index,
+            column_focus: col_index,
+          };
         }
 
-        left = 0;
-        width = 0;
-        columnseleted = [];
-        if (last.left > col_pre) {
-          left = col_pre;
-          width = last.left + last.width - col_pre;
-          if (last.column == null || last.column_focus == null) return;
-          if (last.column[1] > last.column_focus) {
-            last.column[1] = last.column_focus;
-          }
-
-          columnseleted = [col_index, last.column[1]];
-        } else if (last.left === col_pre) {
-          left = col_pre;
-          width = last.left + last.width - col_pre;
-          columnseleted = [col_index, last.column[0]];
-        } else {
-          left = last.left;
-          width = col - last.left - 1;
-          if (last.column == null || last.column_focus == null) return;
-
-          if (last.column[0] < last.column_focus) {
-            last.column[0] = last.column_focus;
-          }
-
-          columnseleted = [last.column[0], col_index];
-        }
-
-        const changeparam = mergeMoveMain(
+        rangeSetValue(
           ctx,
-          columnseleted,
-          rowseleted,
-          last,
-          top,
-          height,
-          left,
-          width
+          cellInput,
+          {
+            row: rowseleted,
+            column: columnseleted,
+          },
+          fxInput
         );
-        if (changeparam != null) {
-          // @ts-ignore
-          [columnseleted, rowseleted, top, height, left, width] = changeparam;
-        }
 
+        ctx.formulaCache.rangestart = true;
+        ctx.formulaCache.rangedrag_column_start = false;
+        ctx.formulaCache.rangedrag_row_start = false;
+
+        ctx.formulaCache.selectingRangeIndex =
+          ctx.formulaCache.rangechangeindex!;
+        if (
+          ctx.formulaCache.rangechangeindex! > ctx.formulaRangeHighlight.length
+        ) {
+          createRangeHightlight(
+            ctx,
+            cellInput.innerHTML,
+            ctx.formulaCache.rangechangeindex!
+          );
+        }
+        createFormulaRangeSelect(ctx, {
+          rangeIndex: ctx.formulaCache.rangechangeindex || 0,
+          left,
+          top,
+          width,
+          height,
+        });
+        e.preventDefault();
+        // $("#fortune-formula-functionrange-select")
+        //   .css({
+        //     left,
+        //     width,
+        //     top,
+        //     height,
+        //   })
+        //   .show();
+        // $("#luckysheet-formula-help-c").hide();
         // luckysheet_count_show(
         //   left,
         //   top,
@@ -451,689 +601,526 @@ export function handleCellAreaMouseDown(
         //   height,
         //   rowseleted,
         //   columnseleted
-        // ); //先不搞
-
-        last.row = rowseleted;
-        last.column = columnseleted;
-
-        last.left_move = left;
-        last.width_move = width;
-        last.top_move = top;
-        last.height_move = height;
-
-        ctx.formulaCache.func_selectedrange = last;
-      } else if (
-        e.ctrlKey &&
-        _.last(cellInput.querySelectorAll("span"))?.innerText !== ","
-      ) {
-        // 按住ctrl 选择选区时  先处理上一个选区
-        let vText = cellInput.innerText;
-
-        if (vText[vText.length - 1] === ")") {
-          vText = vText.substring(0, vText.length - 1); // 先删除最后侧的圆括号)
-        }
-
-        if (vText.length > 0) {
-          const lastWord = vText.substring(vText.length - 1, 1);
-          if (lastWord !== "," && lastWord !== "=" && lastWord !== "(") {
-            vText += ",";
-          }
-        }
-        if (vText.length > 0 && vText.substring(0, 1) === "=") {
-          vText = functionHTMLGenerate(vText);
-
-          if (window.getSelection) {
-            // all browsers, except IE before version 9
-            const currSelection = window.getSelection();
-            if (currSelection == null) return;
-            ctx.formulaCache.functionRangeIndex = [
-              _.indexOf(
-                currSelection.anchorNode?.parentNode?.parentNode?.childNodes,
-                // @ts-ignore
-                currSelection.anchorNode?.parentNode
-              ),
-              currSelection.anchorOffset,
-            ];
-          } else {
-            // Internet Explorer before version 9
-            // @ts-ignore
-            const textRange = document.selection.createRange();
-            ctx.formulaCache.functionRangeIndex = textRange;
-          }
-
-          /* 在显示前重新 + 右侧的圆括号) */
-          cellInput.innerHTML = vText;
-
-          cancelFunctionrangeSelected(ctx);
-          createRangeHightlight(ctx, vText);
-        }
-
-        ctx.formulaCache.rangestart = false;
-        ctx.formulaCache.rangedrag_column_start = false;
-        ctx.formulaCache.rangedrag_row_start = false;
-
-        if (fxInput) fxInput.innerHTML = vText;
-
-        rangeHightlightselected(ctx, cellInput);
-
-        // 再进行 选区的选择
-        israngeseleciton(ctx);
-        ctx.formulaCache.func_selectedrange = {
-          left,
-          width,
-          top,
-          height,
-          left_move: left,
-          width_move: width,
-          top_move: top,
-          height_move: height,
-          row: rowseleted,
-          column: columnseleted,
-          row_focus: row_index,
-          column_focus: col_index,
-        };
-      } else {
-        ctx.formulaCache.func_selectedrange = {
-          left,
-          width,
-          top,
-          height,
-          left_move: left,
-          width_move: width,
-          top_move: top,
-          height_move: height,
-          row: rowseleted,
-          column: columnseleted,
-          row_focus: row_index,
-          column_focus: col_index,
-        };
-      }
-
-      rangeSetValue(
-        ctx,
-        cellInput,
-        {
-          row: rowseleted,
-          column: columnseleted,
-        },
-        fxInput
-      );
-
-      ctx.formulaCache.rangestart = true;
-      ctx.formulaCache.rangedrag_column_start = false;
-      ctx.formulaCache.rangedrag_row_start = false;
-
-      ctx.formulaCache.selectingRangeIndex = ctx.formulaCache.rangechangeindex!;
-      if (
-        ctx.formulaCache.rangechangeindex! > ctx.formulaRangeHighlight.length
-      ) {
-        createRangeHightlight(
-          ctx,
-          cellInput.innerHTML,
-          ctx.formulaCache.rangechangeindex!
-        );
-      }
-      createFormulaRangeSelect(ctx, {
-        rangeIndex: ctx.formulaCache.rangechangeindex || 0,
-        left,
-        top,
-        width,
-        height,
-      });
-      e.preventDefault();
-      // $("#fortune-formula-functionrange-select")
-      //   .css({
-      //     left,
-      //     width,
-      //     top,
-      //     height,
-      //   })
-      //   .show();
-      // $("#luckysheet-formula-help-c").hide();
-      // luckysheet_count_show(
-      //   left,
-      //   top,
-      //   width,
-      //   height,
-      //   rowseleted,
-      //   columnseleted
-      // );
-
-      // setTimeout(() => {
-      // const currSelection = window.getSelection();
-      // @ts-ignore
-      // const anchorOffset = currSelection.anchorNode;
-
-      // let $editor;
-      // if (
-      //   $("#luckysheet-search-formula-parm").is(":visible") ||
-      //   $("#luckysheet-search-formula-parm-select").is(":visible")
-      // ) {
-      //   $editor = cellInput;
-      //   formulaCache.rangechangeindex = formulaCache.data_parm_index;
-      // } else {
-      //   $editor = $(anchorOffset).closest("div");
-      // }
-
-      // const $span = $editor.find(
-      //   `span[rangeindex='${formulaCache.rangechangeindex}']`
-      // );
-
-      //   setCaretPosition($span.get(0), 0, $span.html().length);
-      // }, 1);
-      // return;
-
-      // TODO 下面是临时加的逻辑，待公式选区实现后删除
-      // updateCell(
-      //   ctx,
-      //   ctx.luckysheetCellUpdate[0],
-      //   ctx.luckysheetCellUpdate[1],
-      //   cellInput
-      // );
-      // ctx.luckysheet_select_status = true;
-      return; // skip ctx.luckysheet_select_save to prevent clearing cellInput
-    }
-    updateCell(
-      ctx,
-      ctx.luckysheetCellUpdate[0],
-      ctx.luckysheetCellUpdate[1],
-      cellInput,
-      undefined,
-      canvas
-    );
-    ctx.luckysheet_select_status = true;
-
-    //     if ($("#luckysheet-info").is(":visible")) {
-    //       ctx.luckysheet_select_status = false;
-    //     }
-  }
-  if (
-    checkProtectionSelectLockedOrUnLockedCells(
-      ctx,
-      row_index,
-      col_index,
-      ctx.currentSheetId
-    )
-  ) {
-    ctx.luckysheet_select_status = true;
-  }
-
-  // //条件格式 应用范围可选择多个单元格
-  // if ($("#luckysheet-multiRange-dialog").is(":visible")) {
-  //   conditionformat.selectStatus = true;
-  //   ctx.luckysheet_select_status = false;
-
-  //   if (event.shiftKey) {
-  //     let last =
-  //       conditionformat.selectRange[conditionformat.selectRange.length - 1];
-
-  //     let top = 0,
-  //       height = 0,
-  //       rowseleted = [];
-  //     if (last.top > row_pre) {
-  //       top = row_pre;
-  //       height = last.top + last.height - row_pre;
-
-  //       if (last.row[1] > last.row_focus) {
-  //         last.row[1] = last.row_focus;
-  //       }
-
-  //       rowseleted = [row_index, last.row[1]];
-  //     } else if (last.top == row_pre) {
-  //       top = row_pre;
-  //       height = last.top + last.height - row_pre;
-  //       rowseleted = [row_index, last.row[0]];
-  //     } else {
-  //       top = last.top;
-  //       height = row - last.top - 1;
-
-  //       if (last.row[0] < last.row_focus) {
-  //         last.row[0] = last.row_focus;
-  //       }
-
-  //       rowseleted = [last.row[0], row_index];
-  //     }
-
-  //     let left = 0,
-  //       width = 0,
-  //       columnseleted = [];
-  //     if (last.left > col_pre) {
-  //       left = col_pre;
-  //       width = last.left + last.width - col_pre;
-
-  //       if (last.column[1] > last.column_focus) {
-  //         last.column[1] = last.column_focus;
-  //       }
-
-  //       columnseleted = [col_index, last.column[1]];
-  //     } else if (last.left == col_pre) {
-  //       left = col_pre;
-  //       width = last.left + last.width - col_pre;
-  //       columnseleted = [col_index, last.column[0]];
-  //     } else {
-  //       left = last.left;
-  //       width = col - last.left - 1;
-
-  //       if (last.column[0] < last.column_focus) {
-  //         last.column[0] = last.column_focus;
-  //       }
-
-  //       columnseleted = [last.column[0], col_index];
-  //     }
-
-  //     let changeparam = menuButton.mergeMoveMain(
-  //       columnseleted,
-  //       rowseleted,
-  //       last,
-  //       top,
-  //       height,
-  //       left,
-  //       width
-  //     );
-  //     if (changeparam != null) {
-  //       columnseleted = changeparam[0];
-  //       rowseleted = changeparam[1];
-  //       top = changeparam[2];
-  //       height = changeparam[3];
-  //       left = changeparam[4];
-  //       width = changeparam[5];
-  //     }
-
-  //     last["row"] = rowseleted;
-  //     last["column"] = columnseleted;
-
-  //     last["left_move"] = left;
-  //     last["width_move"] = width;
-  //     last["top_move"] = top;
-  //     last["height_move"] = height;
-
-  //     conditionformat.selectRange[conditionformat.selectRange.length - 1] =
-  //       last;
-  //   } else if (event.ctrlKey) {
-  //     conditionformat.selectRange.push({
-  //       left: col_pre,
-  //       width: col - col_pre - 1,
-  //       top: row_pre,
-  //       height: row - row_pre - 1,
-  //       left_move: col_pre,
-  //       width_move: col - col_pre - 1,
-  //       top_move: row_pre,
-  //       height_move: row - row_pre - 1,
-  //       row: [row_index, row_index_ed],
-  //       column: [col_index, col_index_ed],
-  //       row_focus: row_index,
-  //       column_focus: col_index,
-  //     });
-  //   } else {
-  //     conditionformat.selectRange = [];
-  //     conditionformat.selectRange.push({
-  //       left: col_pre,
-  //       width: col - col_pre - 1,
-  //       top: row_pre,
-  //       height: row - row_pre - 1,
-  //       left_move: col_pre,
-  //       width_move: col - col_pre - 1,
-  //       top_move: row_pre,
-  //       height_move: row - row_pre - 1,
-  //       row: [row_index, row_index_ed],
-  //       column: [col_index, col_index_ed],
-  //       row_focus: row_index,
-  //       column_focus: col_index,
-  //     });
-  //   }
-
-  //   selectionCopyShow(conditionformat.selectRange);
-
-  //   let range = conditionformat.getTxtByRange(conditionformat.selectRange);
-  //   $("#luckysheet-multiRange-dialog input").val(range);
-
-  //   return;
-  // } else {
-  //   conditionformat.selectStatus = false;
-  //   conditionformat.selectRange = [];
-  // }
-
-  // //条件格式 条件值只能选择单个单元格
-  // if ($("#luckysheet-singleRange-dialog").is(":visible")) {
-  //   ctx.luckysheet_select_status = false;
-
-  //   selectionCopyShow([
-  //     { row: [row_index, row_index], column: [col_index, col_index] },
-  //   ]);
-
-  //   let range = getRangetxt(
-  //     ctx.currentSheetId,
-  //     { row: [row_index, row_index], column: [col_index, col_index] },
-  //     ctx.currentSheetId
-  //   );
-  //   $("#luckysheet-singleRange-dialog input").val(range);
-
-  //   return;
-  // }
-
-  // //数据验证 单元格范围选择
-  // if ($("#luckysheet-dataVerificationRange-dialog").is(":visible")) {
-  //   dataVerificationCtrl.selectStatus = true;
-  //   ctx.luckysheet_select_status = false;
-
-  //   if (event.shiftKey) {
-  //     let last =
-  //       dataVerificationCtrl.selectRange[
-  //         dataVerificationCtrl.selectRange.length - 1
-  //       ];
-
-  //     let top = 0,
-  //       height = 0,
-  //       rowseleted = [];
-  //     if (last.top > row_pre) {
-  //       top = row_pre;
-  //       height = last.top + last.height - row_pre;
-
-  //       if (last.row[1] > last.row_focus) {
-  //         last.row[1] = last.row_focus;
-  //       }
-
-  //       rowseleted = [row_index, last.row[1]];
-  //     } else if (last.top == row_pre) {
-  //       top = row_pre;
-  //       height = last.top + last.height - row_pre;
-  //       rowseleted = [row_index, last.row[0]];
-  //     } else {
-  //       top = last.top;
-  //       height = row - last.top - 1;
-
-  //       if (last.row[0] < last.row_focus) {
-  //         last.row[0] = last.row_focus;
-  //       }
-
-  //       rowseleted = [last.row[0], row_index];
-  //     }
-
-  //     let left = 0,
-  //       width = 0,
-  //       columnseleted = [];
-  //     if (last.left > col_pre) {
-  //       left = col_pre;
-  //       width = last.left + last.width - col_pre;
-
-  //       if (last.column[1] > last.column_focus) {
-  //         last.column[1] = last.column_focus;
-  //       }
-
-  //       columnseleted = [col_index, last.column[1]];
-  //     } else if (last.left == col_pre) {
-  //       left = col_pre;
-  //       width = last.left + last.width - col_pre;
-  //       columnseleted = [col_index, last.column[0]];
-  //     } else {
-  //       left = last.left;
-  //       width = col - last.left - 1;
-
-  //       if (last.column[0] < last.column_focus) {
-  //         last.column[0] = last.column_focus;
-  //       }
-
-  //       columnseleted = [last.column[0], col_index];
-  //     }
-
-  //     let changeparam = menuButton.mergeMoveMain(
-  //       columnseleted,
-  //       rowseleted,
-  //       last,
-  //       top,
-  //       height,
-  //       left,
-  //       width
-  //     );
-  //     if (changeparam != null) {
-  //       columnseleted = changeparam[0];
-  //       rowseleted = changeparam[1];
-  //       top = changeparam[2];
-  //       height = changeparam[3];
-  //       left = changeparam[4];
-  //       width = changeparam[5];
-  //     }
-
-  //     last["row"] = rowseleted;
-  //     last["column"] = columnseleted;
-
-  //     last["left_move"] = left;
-  //     last["width_move"] = width;
-  //     last["top_move"] = top;
-  //     last["height_move"] = height;
-
-  //     dataVerificationCtrl.selectRange[
-  //       dataVerificationCtrl.selectRange.length - 1
-  //     ] = last;
-  //   } else {
-  //     dataVerificationCtrl.selectRange = [];
-  //     dataVerificationCtrl.selectRange.push({
-  //       left: col_pre,
-  //       width: col - col_pre - 1,
-  //       top: row_pre,
-  //       height: row - row_pre - 1,
-  //       left_move: col_pre,
-  //       width_move: col - col_pre - 1,
-  //       top_move: row_pre,
-  //       height_move: row - row_pre - 1,
-  //       row: [row_index, row_index_ed],
-  //       column: [col_index, col_index_ed],
-  //       row_focus: row_index,
-  //       column_focus: col_index,
-  //     });
-  //   }
-
-  //   selectionCopyShow(dataVerificationCtrl.selectRange);
-
-  //   let range = dataVerificationCtrl.getTxtByRange(
-  //     dataVerificationCtrl.selectRange
-  //   );
-  //   if (formula.rangetosheet != ctx.currentSheetId) {
-  //     range =
-  //       ctx.luckysheetfile[getSheetIndex(ctx.currentSheetId)].name +
-  //       "!" +
-  //       range;
-  //   }
-  //   $("#luckysheet-dataVerificationRange-dialog input").val(range);
-
-  //   return;
-  // } else {
-  //   dataVerificationCtrl.selectStatus = false;
-  //   dataVerificationCtrl.selectRange = [];
-  // }
-
-  // //if公式生成器
-  // if (ifFormulaGenerator.singleRangeFocus) {
-  //   $("#luckysheet-ifFormulaGenerator-dialog .singRange").click();
-  // }
-  // if (
-  //   $("#luckysheet-ifFormulaGenerator-singleRange-dialog").is(":visible")
-  // ) {
-  //   //选择单个单元格
-  //   ctx.luckysheet_select_status = false;
-  //   formula.rangestart = false;
-
-  //   $("#fortune-formula-functionrange-select")
-  //     .css({
-  //       left: col_pre,
-  //       width: col - col_pre - 1,
-  //       top: row_pre,
-  //       height: row - row_pre - 1,
-  //     })
-  //     .show();
-  //   $("#luckysheet-formula-help-c").hide();
-
-  //   let range = getRangetxt(
-  //     ctx.currentSheetId,
-  //     { row: [row_index, row_index], column: [col_index, col_index] },
-  //     ctx.currentSheetId
-  //   );
-  //   $("#luckysheet-ifFormulaGenerator-singleRange-dialog input").val(range);
-
-  //   return;
-  // }
-  // if (
-  //   $("#luckysheet-ifFormulaGenerator-multiRange-dialog").is(":visible")
-  // ) {
-  //   //选择范围
-  //   ctx.luckysheet_select_status = false;
-  //   formula.func_selectedrange = {
-  //     left: col_pre,
-  //     width: col - col_pre - 1,
-  //     top: row_pre,
-  //     height: row - row_pre - 1,
-  //     left_move: col_pre,
-  //     width_move: col - col_pre - 1,
-  //     top_move: row_pre,
-  //     height_move: row - row_pre - 1,
-  //     row: [row_index, row_index],
-  //     column: [col_index, col_index],
-  //     row_focus: row_index,
-  //     column_focus: col_index,
-  //   };
-  //   formula.rangestart = true;
-
-  //   $("#fortune-formula-functionrange-select")
-  //     .css({
-  //       left: col_pre,
-  //       width: col - col_pre - 1,
-  //       top: row_pre,
-  //       height: row - row_pre - 1,
-  //     })
-  //     .show();
-  //   $("#luckysheet-formula-help-c").hide();
-
-  //   let range = getRangetxt(
-  //     ctx.currentSheetId,
-  //     { row: [row_index, row_index], column: [col_index, col_index] },
-  //     ctx.currentSheetId
-  //   );
-  //   $("#luckysheet-ifFormulaGenerator-multiRange-dialog input").val(range);
-
-  //   $("#luckysheet-row-count-show").hide();
-  //   $("#luckysheet-column-count-show").hide();
-
-  //   return;
-  // }
-
-  if (ctx.luckysheet_select_status) {
-    if (e.shiftKey) {
-      // 按住shift点击，选择范围
-      const last =
-        ctx.luckysheet_select_save?.[ctx.luckysheet_select_save.length - 1]; // 选区最后一个
-      if (
-        last &&
-        last.top != null &&
-        last.left != null &&
-        last.height != null &&
-        last.width != null &&
-        last.row_focus != null &&
-        last.column_focus != null
-      ) {
-        let top = 0;
-        let height = 0;
-        let rowseleted = [];
-        if (last.top > row_pre) {
-          top = row_pre;
-          height = last.top + last.height - row_pre;
-          if (last.row[1] > last.row_focus) {
-            last.row[1] = last.row_focus;
-          }
-          rowseleted = [row_index, last.row[1]];
-        } else if (last.top === row_pre) {
-          top = row_pre;
-          height = last.top + last.height - row_pre;
-          rowseleted = [row_index, last.row[0]];
-        } else {
-          top = last.top;
-          height = row - last.top - 1;
-          if (last.row[0] < last.row_focus) {
-            last.row[0] = last.row_focus;
-          }
-          rowseleted = [last.row[0], row_index];
-        }
-        let left = 0;
-        let width = 0;
-        let columnseleted = [];
-        if (last.left > col_pre) {
-          left = col_pre;
-          width = last.left + last.width - col_pre;
-          if (last.column[1] > last.column_focus) {
-            last.column[1] = last.column_focus;
-          }
-          columnseleted = [col_index, last.column[1]];
-        } else if (last.left === col_pre) {
-          left = col_pre;
-          width = last.left + last.width - col_pre;
-          columnseleted = [col_index, last.column[0]];
-        } else {
-          left = last.left;
-          width = col - last.left - 1;
-          if (last.column[0] < last.column_focus) {
-            last.column[0] = last.column_focus;
-          }
-          columnseleted = [last.column[0], col_index];
-        }
-        const changeparam = mergeMoveMain(
-          ctx,
-          columnseleted,
-          rowseleted,
-          last,
-          top,
-          height,
-          left,
-          width
-        );
-        if (changeparam != null) {
-          // @ts-ignore
-          [columnseleted, rowseleted, top, height, left, width] = changeparam;
-        }
-        last.row = rowseleted;
-        last.column = columnseleted;
-        last.left_move = left;
-        last.width_move = width;
-        last.top_move = top;
-        last.height_move = height;
-        ctx.luckysheet_select_save![ctx.luckysheet_select_save!.length - 1] =
-          last;
-        // // 交替颜色选择范围
-        // if ($("#luckysheet-alternateformat-rangeDialog").is(":visible")) {
-        //   $("#luckysheet-alternateformat-rangeDialog input").val(
-        //     getRangetxt(ctx.currentSheetId, ctx.luckysheet_select_save)
-        //   );
+        // );
+
+        // setTimeout(() => {
+        // const currSelection = window.getSelection();
+        // @ts-ignore
+        // const anchorOffset = currSelection.anchorNode;
+
+        // let $editor;
+        // if (
+        //   $("#luckysheet-search-formula-parm").is(":visible") ||
+        //   $("#luckysheet-search-formula-parm-select").is(":visible")
+        // ) {
+        //   $editor = cellInput;
+        //   formulaCache.rangechangeindex = formulaCache.data_parm_index;
+        // } else {
+        //   $editor = $(anchorOffset).closest("div");
         // }
-        // if (pivotTable.luckysheet_pivotTable_select_state) {
-        //   $("#luckysheet-pivotTable-range-selection-input").val(
-        //     `${
-        //       ctx.luckysheetfile[getSheetIndex(ctx.currentSheetId)]
-        //         .name
-        //     }!${chatatABC(ctx.luckysheet_select_save[0].column[0])}${
-        //       ctx.luckysheet_select_save[0].row[0] + 1
-        //     }:${chatatABC(ctx.luckysheet_select_save[0].column[1])}${
-        //       ctx.luckysheet_select_save[0].row[1] + 1
-        //     }`
-        //   );
+
+        // const $span = $editor.find(
+        //   `span[rangeindex='${formulaCache.rangechangeindex}']`
+        // );
+
+        //   setCaretPosition($span.get(0), 0, $span.html().length);
+        // }, 1);
+        // return;
+
+        // TODO 下面是临时加的逻辑，待公式选区实现后删除
+        // updateCell(
+        //   ctx,
+        //   ctx.luckysheetCellUpdate[0],
+        //   ctx.luckysheetCellUpdate[1],
+        //   cellInput
+        // );
+        // ctx.luckysheet_select_status = true;
+        return; // skip ctx.luckysheet_select_save to prevent clearing cellInput
       }
-    } else if (e.ctrlKey || e.metaKey) {
-      // 选区添加
-      ctx.luckysheet_select_save?.push({
-        left: col_pre,
-        width: col - col_pre - 1,
-        top: row_pre,
-        height: row - row_pre - 1,
-        left_move: col_pre,
-        width_move: col - col_pre - 1,
-        top_move: row_pre,
-        height_move: row - row_pre - 1,
-        row: [row_index, row_index_ed],
-        column: [col_index, col_index_ed],
-        row_focus: row_index,
-        column_focus: col_index,
-      });
-    } else {
-      // eslint-disable-next-line prefer-const
-      ctx.luckysheet_select_save = [
-        {
+      updateCell(
+        ctx,
+        ctx.luckysheetCellUpdate[0],
+        ctx.luckysheetCellUpdate[1],
+        cellInput,
+        undefined,
+        canvas
+      );
+      ctx.luckysheet_select_status = true;
+
+      //     if ($("#luckysheet-info").is(":visible")) {
+      //       ctx.luckysheet_select_status = false;
+      //     }
+    }
+    if (
+      checkProtectionSelectLockedOrUnLockedCells(
+        ctx,
+        row_index,
+        col_index,
+        ctx.currentSheetId
+      )
+    ) {
+      ctx.luckysheet_select_status = true;
+    }
+
+    // //条件格式 应用范围可选择多个单元格
+    // if ($("#luckysheet-multiRange-dialog").is(":visible")) {
+    //   conditionformat.selectStatus = true;
+    //   ctx.luckysheet_select_status = false;
+
+    //   if (event.shiftKey) {
+    //     let last =
+    //       conditionformat.selectRange[conditionformat.selectRange.length - 1];
+
+    //     let top = 0,
+    //       height = 0,
+    //       rowseleted = [];
+    //     if (last.top > row_pre) {
+    //       top = row_pre;
+    //       height = last.top + last.height - row_pre;
+
+    //       if (last.row[1] > last.row_focus) {
+    //         last.row[1] = last.row_focus;
+    //       }
+
+    //       rowseleted = [row_index, last.row[1]];
+    //     } else if (last.top == row_pre) {
+    //       top = row_pre;
+    //       height = last.top + last.height - row_pre;
+    //       rowseleted = [row_index, last.row[0]];
+    //     } else {
+    //       top = last.top;
+    //       height = row - last.top - 1;
+
+    //       if (last.row[0] < last.row_focus) {
+    //         last.row[0] = last.row_focus;
+    //       }
+
+    //       rowseleted = [last.row[0], row_index];
+    //     }
+
+    //     let left = 0,
+    //       width = 0,
+    //       columnseleted = [];
+    //     if (last.left > col_pre) {
+    //       left = col_pre;
+    //       width = last.left + last.width - col_pre;
+
+    //       if (last.column[1] > last.column_focus) {
+    //         last.column[1] = last.column_focus;
+    //       }
+
+    //       columnseleted = [col_index, last.column[1]];
+    //     } else if (last.left == col_pre) {
+    //       left = col_pre;
+    //       width = last.left + last.width - col_pre;
+    //       columnseleted = [col_index, last.column[0]];
+    //     } else {
+    //       left = last.left;
+    //       width = col - last.left - 1;
+
+    //       if (last.column[0] < last.column_focus) {
+    //         last.column[0] = last.column_focus;
+    //       }
+
+    //       columnseleted = [last.column[0], col_index];
+    //     }
+
+    //     let changeparam = menuButton.mergeMoveMain(
+    //       columnseleted,
+    //       rowseleted,
+    //       last,
+    //       top,
+    //       height,
+    //       left,
+    //       width
+    //     );
+    //     if (changeparam != null) {
+    //       columnseleted = changeparam[0];
+    //       rowseleted = changeparam[1];
+    //       top = changeparam[2];
+    //       height = changeparam[3];
+    //       left = changeparam[4];
+    //       width = changeparam[5];
+    //     }
+
+    //     last["row"] = rowseleted;
+    //     last["column"] = columnseleted;
+
+    //     last["left_move"] = left;
+    //     last["width_move"] = width;
+    //     last["top_move"] = top;
+    //     last["height_move"] = height;
+
+    //     conditionformat.selectRange[conditionformat.selectRange.length - 1] =
+    //       last;
+    //   } else if (event.ctrlKey) {
+    //     conditionformat.selectRange.push({
+    //       left: col_pre,
+    //       width: col - col_pre - 1,
+    //       top: row_pre,
+    //       height: row - row_pre - 1,
+    //       left_move: col_pre,
+    //       width_move: col - col_pre - 1,
+    //       top_move: row_pre,
+    //       height_move: row - row_pre - 1,
+    //       row: [row_index, row_index_ed],
+    //       column: [col_index, col_index_ed],
+    //       row_focus: row_index,
+    //       column_focus: col_index,
+    //     });
+    //   } else {
+    //     conditionformat.selectRange = [];
+    //     conditionformat.selectRange.push({
+    //       left: col_pre,
+    //       width: col - col_pre - 1,
+    //       top: row_pre,
+    //       height: row - row_pre - 1,
+    //       left_move: col_pre,
+    //       width_move: col - col_pre - 1,
+    //       top_move: row_pre,
+    //       height_move: row - row_pre - 1,
+    //       row: [row_index, row_index_ed],
+    //       column: [col_index, col_index_ed],
+    //       row_focus: row_index,
+    //       column_focus: col_index,
+    //     });
+    //   }
+
+    //   selectionCopyShow(conditionformat.selectRange);
+
+    //   let range = conditionformat.getTxtByRange(conditionformat.selectRange);
+    //   $("#luckysheet-multiRange-dialog input").val(range);
+
+    //   return;
+    // } else {
+    //   conditionformat.selectStatus = false;
+    //   conditionformat.selectRange = [];
+    // }
+
+    // //条件格式 条件值只能选择单个单元格
+    // if ($("#luckysheet-singleRange-dialog").is(":visible")) {
+    //   ctx.luckysheet_select_status = false;
+
+    //   selectionCopyShow([
+    //     { row: [row_index, row_index], column: [col_index, col_index] },
+    //   ]);
+
+    //   let range = getRangetxt(
+    //     ctx.currentSheetId,
+    //     { row: [row_index, row_index], column: [col_index, col_index] },
+    //     ctx.currentSheetId
+    //   );
+    //   $("#luckysheet-singleRange-dialog input").val(range);
+
+    //   return;
+    // }
+
+    // //数据验证 单元格范围选择
+    // if ($("#luckysheet-dataVerificationRange-dialog").is(":visible")) {
+    //   dataVerificationCtrl.selectStatus = true;
+    //   ctx.luckysheet_select_status = false;
+
+    //   if (event.shiftKey) {
+    //     let last =
+    //       dataVerificationCtrl.selectRange[
+    //         dataVerificationCtrl.selectRange.length - 1
+    //       ];
+
+    //     let top = 0,
+    //       height = 0,
+    //       rowseleted = [];
+    //     if (last.top > row_pre) {
+    //       top = row_pre;
+    //       height = last.top + last.height - row_pre;
+
+    //       if (last.row[1] > last.row_focus) {
+    //         last.row[1] = last.row_focus;
+    //       }
+
+    //       rowseleted = [row_index, last.row[1]];
+    //     } else if (last.top == row_pre) {
+    //       top = row_pre;
+    //       height = last.top + last.height - row_pre;
+    //       rowseleted = [row_index, last.row[0]];
+    //     } else {
+    //       top = last.top;
+    //       height = row - last.top - 1;
+
+    //       if (last.row[0] < last.row_focus) {
+    //         last.row[0] = last.row_focus;
+    //       }
+
+    //       rowseleted = [last.row[0], row_index];
+    //     }
+
+    //     let left = 0,
+    //       width = 0,
+    //       columnseleted = [];
+    //     if (last.left > col_pre) {
+    //       left = col_pre;
+    //       width = last.left + last.width - col_pre;
+
+    //       if (last.column[1] > last.column_focus) {
+    //         last.column[1] = last.column_focus;
+    //       }
+
+    //       columnseleted = [col_index, last.column[1]];
+    //     } else if (last.left == col_pre) {
+    //       left = col_pre;
+    //       width = last.left + last.width - col_pre;
+    //       columnseleted = [col_index, last.column[0]];
+    //     } else {
+    //       left = last.left;
+    //       width = col - last.left - 1;
+
+    //       if (last.column[0] < last.column_focus) {
+    //         last.column[0] = last.column_focus;
+    //       }
+
+    //       columnseleted = [last.column[0], col_index];
+    //     }
+
+    //     let changeparam = menuButton.mergeMoveMain(
+    //       columnseleted,
+    //       rowseleted,
+    //       last,
+    //       top,
+    //       height,
+    //       left,
+    //       width
+    //     );
+    //     if (changeparam != null) {
+    //       columnseleted = changeparam[0];
+    //       rowseleted = changeparam[1];
+    //       top = changeparam[2];
+    //       height = changeparam[3];
+    //       left = changeparam[4];
+    //       width = changeparam[5];
+    //     }
+
+    //     last["row"] = rowseleted;
+    //     last["column"] = columnseleted;
+
+    //     last["left_move"] = left;
+    //     last["width_move"] = width;
+    //     last["top_move"] = top;
+    //     last["height_move"] = height;
+
+    //     dataVerificationCtrl.selectRange[
+    //       dataVerificationCtrl.selectRange.length - 1
+    //     ] = last;
+    //   } else {
+    //     dataVerificationCtrl.selectRange = [];
+    //     dataVerificationCtrl.selectRange.push({
+    //       left: col_pre,
+    //       width: col - col_pre - 1,
+    //       top: row_pre,
+    //       height: row - row_pre - 1,
+    //       left_move: col_pre,
+    //       width_move: col - col_pre - 1,
+    //       top_move: row_pre,
+    //       height_move: row - row_pre - 1,
+    //       row: [row_index, row_index_ed],
+    //       column: [col_index, col_index_ed],
+    //       row_focus: row_index,
+    //       column_focus: col_index,
+    //     });
+    //   }
+
+    //   selectionCopyShow(dataVerificationCtrl.selectRange);
+
+    //   let range = dataVerificationCtrl.getTxtByRange(
+    //     dataVerificationCtrl.selectRange
+    //   );
+    //   if (formula.rangetosheet != ctx.currentSheetId) {
+    //     range =
+    //       ctx.luckysheetfile[getSheetIndex(ctx.currentSheetId)].name +
+    //       "!" +
+    //       range;
+    //   }
+    //   $("#luckysheet-dataVerificationRange-dialog input").val(range);
+
+    //   return;
+    // } else {
+    //   dataVerificationCtrl.selectStatus = false;
+    //   dataVerificationCtrl.selectRange = [];
+    // }
+
+    // //if公式生成器
+    // if (ifFormulaGenerator.singleRangeFocus) {
+    //   $("#luckysheet-ifFormulaGenerator-dialog .singRange").click();
+    // }
+    // if (
+    //   $("#luckysheet-ifFormulaGenerator-singleRange-dialog").is(":visible")
+    // ) {
+    //   //选择单个单元格
+    //   ctx.luckysheet_select_status = false;
+    //   formula.rangestart = false;
+
+    //   $("#fortune-formula-functionrange-select")
+    //     .css({
+    //       left: col_pre,
+    //       width: col - col_pre - 1,
+    //       top: row_pre,
+    //       height: row - row_pre - 1,
+    //     })
+    //     .show();
+    //   $("#luckysheet-formula-help-c").hide();
+
+    //   let range = getRangetxt(
+    //     ctx.currentSheetId,
+    //     { row: [row_index, row_index], column: [col_index, col_index] },
+    //     ctx.currentSheetId
+    //   );
+    //   $("#luckysheet-ifFormulaGenerator-singleRange-dialog input").val(range);
+
+    //   return;
+    // }
+    // if (
+    //   $("#luckysheet-ifFormulaGenerator-multiRange-dialog").is(":visible")
+    // ) {
+    //   //选择范围
+    //   ctx.luckysheet_select_status = false;
+    //   formula.func_selectedrange = {
+    //     left: col_pre,
+    //     width: col - col_pre - 1,
+    //     top: row_pre,
+    //     height: row - row_pre - 1,
+    //     left_move: col_pre,
+    //     width_move: col - col_pre - 1,
+    //     top_move: row_pre,
+    //     height_move: row - row_pre - 1,
+    //     row: [row_index, row_index],
+    //     column: [col_index, col_index],
+    //     row_focus: row_index,
+    //     column_focus: col_index,
+    //   };
+    //   formula.rangestart = true;
+
+    //   $("#fortune-formula-functionrange-select")
+    //     .css({
+    //       left: col_pre,
+    //       width: col - col_pre - 1,
+    //       top: row_pre,
+    //       height: row - row_pre - 1,
+    //     })
+    //     .show();
+    //   $("#luckysheet-formula-help-c").hide();
+
+    //   let range = getRangetxt(
+    //     ctx.currentSheetId,
+    //     { row: [row_index, row_index], column: [col_index, col_index] },
+    //     ctx.currentSheetId
+    //   );
+    //   $("#luckysheet-ifFormulaGenerator-multiRange-dialog input").val(range);
+
+    //   $("#luckysheet-row-count-show").hide();
+    //   $("#luckysheet-column-count-show").hide();
+
+    //   return;
+    // }
+
+    if (ctx.luckysheet_select_status) {
+      if (e.shiftKey) {
+        // 按住shift点击，选择范围
+        const last =
+          ctx.luckysheet_select_save?.[ctx.luckysheet_select_save.length - 1]; // 选区最后一个
+        if (
+          last &&
+          last.top != null &&
+          last.left != null &&
+          last.height != null &&
+          last.width != null &&
+          last.row_focus != null &&
+          last.column_focus != null
+        ) {
+          let top = 0;
+          let height = 0;
+          let rowseleted = [];
+          if (last.top > row_pre) {
+            top = row_pre;
+            height = last.top + last.height - row_pre;
+            if (last.row[1] > last.row_focus) {
+              last.row[1] = last.row_focus;
+            }
+            rowseleted = [row_index, last.row[1]];
+          } else if (last.top === row_pre) {
+            top = row_pre;
+            height = last.top + last.height - row_pre;
+            rowseleted = [row_index, last.row[0]];
+          } else {
+            top = last.top;
+            height = row - last.top - 1;
+            if (last.row[0] < last.row_focus) {
+              last.row[0] = last.row_focus;
+            }
+            rowseleted = [last.row[0], row_index];
+          }
+          let left = 0;
+          let width = 0;
+          let columnseleted = [];
+          if (last.left > col_pre) {
+            left = col_pre;
+            width = last.left + last.width - col_pre;
+            if (last.column[1] > last.column_focus) {
+              last.column[1] = last.column_focus;
+            }
+            columnseleted = [col_index, last.column[1]];
+          } else if (last.left === col_pre) {
+            left = col_pre;
+            width = last.left + last.width - col_pre;
+            columnseleted = [col_index, last.column[0]];
+          } else {
+            left = last.left;
+            width = col - last.left - 1;
+            if (last.column[0] < last.column_focus) {
+              last.column[0] = last.column_focus;
+            }
+            columnseleted = [last.column[0], col_index];
+          }
+          const changeparam = mergeMoveMain(
+            ctx,
+            columnseleted,
+            rowseleted,
+            last,
+            top,
+            height,
+            left,
+            width
+          );
+          if (changeparam != null) {
+            // @ts-ignore
+            [columnseleted, rowseleted, top, height, left, width] = changeparam;
+          }
+          last.row = rowseleted;
+          last.column = columnseleted;
+          last.left_move = left;
+          last.width_move = width;
+          last.top_move = top;
+          last.height_move = height;
+          ctx.luckysheet_select_save![ctx.luckysheet_select_save!.length - 1] =
+            last;
+          // // 交替颜色选择范围
+          // if ($("#luckysheet-alternateformat-rangeDialog").is(":visible")) {
+          //   $("#luckysheet-alternateformat-rangeDialog input").val(
+          //     getRangetxt(ctx.currentSheetId, ctx.luckysheet_select_save)
+          //   );
+          // }
+          // if (pivotTable.luckysheet_pivotTable_select_state) {
+          //   $("#luckysheet-pivotTable-range-selection-input").val(
+          //     `${
+          //       ctx.luckysheetfile[getSheetIndex(ctx.currentSheetId)]
+          //         .name
+          //     }!${chatatABC(ctx.luckysheet_select_save[0].column[0])}${
+          //       ctx.luckysheet_select_save[0].row[0] + 1
+          //     }:${chatatABC(ctx.luckysheet_select_save[0].column[1])}${
+          //       ctx.luckysheet_select_save[0].row[1] + 1
+          //     }`
+          //   );
+        }
+      } else if (e.ctrlKey || e.metaKey) {
+        // 选区添加
+        ctx.luckysheet_select_save?.push({
           left: col_pre,
           width: col - col_pre - 1,
           top: row_pre,
@@ -1146,79 +1133,93 @@ export function handleCellAreaMouseDown(
           column: [col_index, col_index_ed],
           row_focus: row_index,
           column_focus: col_index,
-        },
-      ];
+        });
+      } else {
+        // eslint-disable-next-line prefer-const
+        ctx.luckysheet_select_save = [
+          {
+            left: col_pre,
+            width: col - col_pre - 1,
+            top: row_pre,
+            height: row - row_pre - 1,
+            left_move: col_pre,
+            width_move: col - col_pre - 1,
+            top_move: row_pre,
+            height_move: row - row_pre - 1,
+            row: [row_index, row_index_ed],
+            column: [col_index, col_index_ed],
+            row_focus: row_index,
+            column_focus: col_index,
+          },
+        ];
 
-      // 单元格格式icon对应
-      //   menuButton.menuButtonFocus(ctx.flowdata, row_index, col_index);
-      //   // 函数公式显示栏
-      //   formula.fucntionboxshow(row_index, col_index);
+        // 单元格格式icon对应
+        //   menuButton.menuButtonFocus(ctx.flowdata, row_index, col_index);
+        //   // 函数公式显示栏
+        //   formula.fucntionboxshow(row_index, col_index);
+      }
     }
-  }
 
-  // selectHightlightShow();
+    // selectHightlightShow();
 
-  //   if (
-  //     luckysheetFreezen.freezenhorizontaldata != null ||
-  //     luckysheetFreezen.freezenverticaldata != null
-  //   ) {
-  //     luckysheetFreezen.scrollAdaptOfselect();
-  //   }
+    //   if (
+    //     luckysheetFreezen.freezenhorizontaldata != null ||
+    //     luckysheetFreezen.freezenverticaldata != null
+    //   ) {
+    //     luckysheetFreezen.scrollAdaptOfselect();
+    //   }
 
-  //   if (!browser.mobilecheck()) {
-  //     // 非移动端聚焦输入框
-  //     luckysheetactiveCell();
-  //   }
+    //   if (!browser.mobilecheck()) {
+    //     // 非移动端聚焦输入框
+    //     luckysheetactiveCell();
+    //   }
 
-  //   // 允许编辑后的后台更新时
-  //   server.saveParam(
-  //     "mv",
-  //     ctx.currentSheetId,
-  //     ctx.luckysheet_select_save
-  //   );
-  // }
+    //   // 允许编辑后的后台更新时
+    //   server.saveParam(
+    //     "mv",
+    //     ctx.currentSheetId,
+    //     ctx.luckysheet_select_save
+    //   );
+    // }
 
-  // // 交替颜色
-  // if (alternateformat.rangefocus) {
-  //   alternateformat.rangefocus = false;
-  //   $("#luckysheet-alternateformat-range .fa-table").click();
-  // }
+    // // 交替颜色
+    // if (alternateformat.rangefocus) {
+    //   alternateformat.rangefocus = false;
+    //   $("#luckysheet-alternateformat-range .fa-table").click();
+    // }
 
-  // $("#luckysheet-row-count-show, #luckysheet-column-count-show").hide();
+    // $("#luckysheet-row-count-show, #luckysheet-column-count-show").hide();
 
-  // if (!isEditMode()) {
-  //   // chartMix 隐藏当前页的数据选择区域高亮
-  //   hideAllNeedRangeShow();
-  // }
+    // if (!isEditMode()) {
+    //   // chartMix 隐藏当前页的数据选择区域高亮
+    //   hideAllNeedRangeShow();
+    // }
 
-  // // selectHelpboxFill();
+    // // selectHelpboxFill();
 
-  // // 数据透视表
-  // pivotTable.pivotclick(row_index, col_index, ctx.currentSheetId);
+    // // 数据透视表
+    // pivotTable.pivotclick(row_index, col_index, ctx.currentSheetId);
 
-  // luckysheetContainerFocus();
+    // luckysheetContainerFocus();
 
-  ctx.luckysheet_select_save = normalizeSelection(
-    ctx,
-    ctx.luckysheet_select_save
-  );
+    ctx.luckysheet_select_save = normalizeSelection(
+      ctx,
+      ctx.luckysheet_select_save
+    );
 
-  if (ctx.hooks.afterCellMouseDown) {
-    setTimeout(() => {
-      ctx.hooks.afterCellMouseDown?.(flowdata[row_index]?.[col_index], {
-        row: row_index,
-        column: col_index,
-        startRow: row_pre,
-        startColumn: col_pre,
-        endRow: row,
-        endColumn: col,
+    if (ctx.hooks.afterCellMouseDown) {
+      setTimeout(() => {
+        ctx.hooks.afterCellMouseDown?.(flowdata[row_index]?.[col_index], {
+          row: row_index,
+          column: col_index,
+          startRow: row_pre,
+          startColumn: col_pre,
+          endRow: row,
+          endColumn: col,
+        });
       });
-    });
-  }
-
-}catch{
-
-}
+    }
+  } catch {}
 }
 
 export function handleCellAreaDoubleClick(
@@ -1402,16 +1403,55 @@ export function handleCellAreaDoubleClick(
   // }
 }
 
-function rangeIsTable(row:number,re:number,col:number,ce:number, mergeCells: any): boolean {
-  if (row === re /*|| range.c===range.ce*/) {
-      return false;
+function rangeIsTable(
+  row: number,
+  re: number,
+  col: number,
+  ce: number,
+  cellMatrix: CellMatrix
+): boolean {
+  if (row === re) {
+    return false;
   }
-  if (!mergeCells) {
-      //table shape and no mergeCells
-      return true;
+  const firstCell = cellMatrix[row][col];
+  if (firstCell && firstCell.mc) {
+    const { r, c, rs, cs } = firstCell.mc;
+    if (
+      r !== undefined &&
+      c !== undefined &&
+      rs !== undefined &&
+      cs !== undefined
+    ) {
+      if (r === row && re === r + rs - 1 && col === c && ce === c + cs - 1) {
+        return false; // its a singleMerge
+      }
+    }
   }
-  const { r, c, rs, cs } = mergeCells;
-  return !(row === r && re === (r + rs - 1) && col === c && ce === (c + cs - 1)) // when false its not a single merge 
+  let colCheck = col;
+  while (colCheck <= ce) {
+    const cell = cellMatrix[row][colCheck];
+    if (cell && cell.mc) {
+      const { r, c, rs, cs } = cell.mc;
+      if (
+        r !== undefined &&
+        c !== undefined &&
+        rs !== undefined &&
+        cs !== undefined
+      ) {
+        if (r !== row || re !== r + rs - 1) {
+          return true; // not merge on all height
+        }
+        if (c + cs - 1 <= ce) {
+          colCheck = c + cs;
+        } else {
+          return true; // not merge on all width
+        }
+      }
+    } else {
+      return true; // not merge cell than its table
+    }
+  }
+  return false;
 }
 
 export function handleContextMenu(
@@ -1422,7 +1462,6 @@ export function handleContextMenu(
   container: HTMLDivElement,
   area: "cell" | "rowHeader" | "columnHeader"
 ) {
-  
   const flowdata = getFlowdata(ctx);
   if (!flowdata) return;
 
@@ -1452,8 +1491,7 @@ export function handleContextMenu(
   // relative to the workbook container
   const x = e.pageX - workbookRect.left;
   const y = e.pageY - workbookRect.top;
-  
-  
+
   // select current cell when clicking the right button
   e.preventDefault();
   if (area === "cell") {
@@ -1521,14 +1559,14 @@ export function handleContextMenu(
             row_focus: (rowseleted as number[])[0],
             column_focus: (columnseleted as number[])[0],
           });
-          const [r,re]=rowseleted as number[];
-          const [c,ce]=columnseleted as number[];
+          const [r, re] = rowseleted as number[];
+          const [c, ce] = columnseleted as number[];
           ctx.contextMenu = {
             x,
             y,
             pageX: e.pageX,
             pageY: e.pageY,
-            isTable:rangeIsTable(r,re,c,ce,flowdata[row_index][col_index]?.mc)
+            isTable: rangeIsTable(r, re, c, ce, flowdata),
           };
           return;
         }
@@ -1552,18 +1590,21 @@ export function handleContextMenu(
         y,
         pageX: e.pageX,
         pageY: e.pageY,
-        isTable:false,
+        isTable: false,
       };
       return;
     }
     if (isInSelection) {
-      const {row:[r,re],column:[c,ce]}=api.getSelection(ctx)![0]
+      const {
+        row: [r, re],
+        column: [c, ce],
+      } = api.getSelection(ctx)![0];
       ctx.contextMenu = {
         x,
         y,
         pageX: e.pageX,
         pageY: e.pageY,
-        isTable:rangeIsTable(r,re,c,ce,flowdata[r][c]?.mc)
+        isTable: rangeIsTable(r, re, c, ce, flowdata),
       };
       return;
     }
@@ -1601,14 +1642,14 @@ export function handleContextMenu(
             column_focus: (columnseleted as number[])[0],
           },
         ];
-        const [r,re]=rowseleted as number[];
-        const [c,ce]=columnseleted as number[];
+        const [r, re] = rowseleted as number[];
+        const [c, ce] = columnseleted as number[];
         ctx.contextMenu = {
           x,
           y,
           pageX: e.pageX,
           pageY: e.pageY,
-          isTable:rangeIsTable(r,re,c,ce,flowdata[row_index][col_index]?.mc)
+          isTable: rangeIsTable(r, re, c, ce, flowdata),
         };
         return;
       }
@@ -1634,7 +1675,13 @@ export function handleContextMenu(
       y,
       pageX: e.pageX,
       pageY: e.pageY,
-      isTable:rangeIsTable(row_index,row_index_ed,col_index,col_index_ed,null),
+      isTable: rangeIsTable(
+        row_index,
+        row_index_ed,
+        col_index,
+        col_index_ed,
+        flowdata
+      ),
     };
   } else if (area === "rowHeader") {
     _.set(ctx.contextMenu, "headerMenu", "row");
@@ -1666,7 +1713,7 @@ export function handleContextMenu(
       y,
       pageX: e.pageX,
       pageY: e.pageY,
-      isTable:false,
+      isTable: false,
     };
     if (isInSelection) return;
     const col_index = ctx.visibledatacolumn.length - 1;
@@ -1727,7 +1774,7 @@ export function handleContextMenu(
       y,
       pageX: e.pageX,
       pageY: e.pageY,
-      isTable:false,
+      isTable: false,
     };
     if (isInSelection) return;
     const left = col_pre;
